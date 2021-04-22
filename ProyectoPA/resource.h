@@ -11,6 +11,7 @@
 #define ENVIOS_CANCELAR                 112
 #define ENVIOS_EDITAR                   114
 #define ENVIOS_ALTA                     116
+#define PRODUCTOS_ALTAS                 118
 #define BTN_LOGIN                       1001
 #define BTN_LOGIN_SALIR                 1002
 #define TXT_NOMBRE                      1003
@@ -26,6 +27,7 @@
 #define BTN_REGRESAR_INFO_VENDEROR      1022
 #define IDC_LIST1                       1023
 #define IDC_BUTTON1                     1024
+#define IDC_BUTTON2                     1026
 #define IDC_EDIT2                       1027
 #define IDC_EDIT3                       1029
 #define IDC_EDIT4                       1030
@@ -33,7 +35,13 @@
 #define IDC_EDIT6                       1032
 #define IDC_DATETIMEPICKER1             1033
 #define IDC_EDIT7                       1034
+#define IDC_EDIT1                       1034
 #define IDC_EDIT8                       1035
+#define IDC_EDIT9                       1036
+#define IDC_EDIT10                      1037
+#define IDC_EDIT11                      1038
+#define IDC_EDIT12                      1039
+#define IDC_BUTTON3                     1040
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -47,9 +55,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        118
+#define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1034
+#define _APS_NEXT_CONTROL_VALUE         1041
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
