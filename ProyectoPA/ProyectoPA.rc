@@ -113,6 +113,18 @@ BEGIN
     LTEXT           "Lista de envíos",IDC_STATIC,81,53,49,8
 END
 
+ENVIOS_CANCELAR DIALOGEX 0, 0, 661, 296
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Cancelar envío"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Cancelar Envío",IDC_STATIC,293,27,49,8
+    LISTBOX         IDC_LIST1,59,79,242,149,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Seleccione envío",IDC_STATIC,61,58,55,8
+    LTEXT           "Envío seleccionado",IDC_STATIC,345,80,63,8
+    PUSHBUTTON      "Cancelar y Eliminar",IDC_BUTTON1,346,172,106,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -161,6 +173,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 297
     END
+
+    ENVIOS_CANCELAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 654
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 289
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -191,6 +211,11 @@ BEGIN
 END
 
 ENVIOS_MIS_ENVIOS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+ENVIOS_CANCELAR AFX_DIALOG_LAYOUT
 BEGIN
     0
 END
