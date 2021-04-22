@@ -237,7 +237,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Modificar producto"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Guardar cambios",IDOK,361,419,95,14
+    DEFPUSHBUTTON   "Guardar cambios",IDOK,349,395,95,14
     LTEXT           "Editar producto",IDC_STATIC,193,25,51,8
     LTEXT           "Nombre del producto",IDC_STATIC,37,41,70,8
     EDITTEXT        IDC_EDIT1,34,56,250,14,ES_AUTOHSCROLL
