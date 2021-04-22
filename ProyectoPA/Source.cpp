@@ -4,6 +4,8 @@
 //Protipos de los callbacks
 BOOL CALLBACK fLoginDialog(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fRegistroDialog(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fInfoVendedorDialog(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fEnviosMisEnvios(HWND, UINT, WPARAM, LPARAM);
 
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
@@ -14,7 +16,8 @@ void createRegisterDialog();
 //Creacion de las ventanas
 void createLoginDialog();
 void createModalDialog(HWND);
-
+void createVendedorInfoDialog();
+void createEnviosMisEnvios();
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -24,6 +27,7 @@ void mostrarMensaje(HWND, LPCSTR);
 
 bool closeLogin = false;
 bool closeRegister = false;
+bool closeVendedorInfo = false;
 
 
 HINSTANCE hGlobalInstance;
@@ -33,8 +37,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, PSTR cmdLine, int cShow
 	hGlobalInstance = hInstance;
 
 	//Primera ventana
-	createLoginDialog();
-	
+	//createLoginDialog();
+	//createRegisterDialog();
+	createEnviosMisEnvios();
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG));
 
@@ -87,14 +92,30 @@ void createModalDialog(HWND hwnd) {
 
 //Creacion de ventanas
 
-void createRegisterDialog() {
-	HWND registerwindow = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(REGISTRO_SCREEN), NULL, fRegistroDialog);
-	ShowWindow(registerwindow, SW_SHOW);
-}
 
 void createLoginDialog() {
-	HWND hVentanaLogin = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(LOGIN_SCREEN), NULL, fLoginDialog);
-	ShowWindow(hVentanaLogin, SW_SHOW);
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(LOGIN_SCREEN), NULL, fLoginDialog);
+	ShowWindow(ventana, SW_SHOW);
+}
+
+void createVendedorInfoDialog() {
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(SCREEN_INFORMACION_VENDEDOR), NULL, fInfoVendedorDialog);
+	ShowWindow(ventana, SW_SHOW);
+}
+
+
+void createRegisterDialog() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(REGISTRO_SCREEN), NULL, fRegistroDialog);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
+void createEnviosMisEnvios() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(ENVIOS_MIS_ENVIOS), NULL, fEnviosMisEnvios);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
 }
 
 
@@ -174,6 +195,45 @@ BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 
 
+BOOL CALLBACK fInfoVendedorDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+	case WM_COMMAND:
+	{
+	}
+	break;
+	case WM_CLOSE:
+		//closeVendedorInfo = true;
+		//DestroyWindow(hwnd);
+		break;
+	case WM_DESTROY:
+		if (closeRegister) PostQuitMessage(2);
+		break;
+	}
+	return false;
+}
+
+BOOL CALLBACK fEnviosMisEnvios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+	case WM_COMMAND:
+	{
+	}
+	break;
+	case WM_CLOSE:
+		//closeVendedorInfo = true;
+		//DestroyWindow(hwnd);
+		break;
+	case WM_DESTROY:
+		if (closeRegister) PostQuitMessage(2);
+		break;
+	}
+	return false;
+}
+
+
+
+
 //Mensajes
 
 void mostrarMensaje(HWND hwnd, LPCSTR mensaje) {
@@ -193,3 +253,10 @@ void cerrarVentana(HWND hwnd) {
 	DestroyWindow(hwnd);
 }
 
+
+//Notas
+
+//Mes agregar 1 
+// Anio agregar 1900
+
+//Clase 25-03 --> Se ve el manejo del tiempo  01hr:00min
