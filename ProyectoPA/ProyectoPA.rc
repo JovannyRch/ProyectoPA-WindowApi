@@ -63,6 +63,7 @@ BEGIN
     EDITTEXT        TXT_PASSWORD,77,101,154,14,ES_AUTOHSCROLL
     PUSHBUTTON      "Registrarse",BTN_REGISTRARSE,127,197,50,14
     LTEXT           "¿Aún no tienes cuenta?",IDC_STATIC,114,183,76,8
+    LTEXT           "Inicio de Sesión",IDC_STATIC,123,21,52,8
 END
 
 IDD_DIALOG2 DIALOGEX 0, 0, 311, 232
@@ -70,7 +71,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Dialog"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Registro de Usuario",IDC_STATIC,121,29,65,8,WS_BORDER
+    LTEXT           "Registro de Usuario",IDC_STATIC,121,29,65,12,WS_BORDER
     LTEXT           "Nombre",IDC_STATIC,44,53,27,8
     LTEXT           "Password",IDC_STATIC,45,94,32,8
     PUSHBUTTON      "Registrar",BTN_REGISTER_SUBMIT,125,150,50,14

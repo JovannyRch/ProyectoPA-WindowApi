@@ -10,7 +10,6 @@ void cerrarVentana(HWND);
 void setEnable(HWND, UINT, bool);
 void handleRegisterClickButton(HWND);
 void createRegisterWindow();
-void createLoginWindow();
 
 HINSTANCE hGlobalInstance;
 
@@ -18,7 +17,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, PSTR cmdLine, int cShow
 	
 	hGlobalInstance = hInstance;
 
-	createLoginWindow();
+	HWND hVentanaPrincipal = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), 0, fVentanaPrincipal);
+	ShowWindow(hVentanaPrincipal, cShow);
 	
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG));
@@ -98,13 +98,8 @@ void handleRegisterClickButton(HWND hwnd) {
 
 
 void createRegisterWindow() {
-	HWND registerwindow = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(1), NULL, fRegisterWindow);
+	HWND registerwindow = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(IDD_DIALOG2), NULL, fRegisterWindow);
 	ShowWindow(registerwindow, SW_SHOW);
-}
-
-void createLoginWindow() {
-	HWND hVentanaPrincipal = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(IDD_DIALOG1), 0, fVentanaPrincipal);
-	ShowWindow(hVentanaPrincipal, SW_SHOW);
 }
 
 BOOL CALLBACK fRegisterWindow(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -127,4 +122,8 @@ BOOL CALLBACK fRegisterWindow(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	}
 
 	return false;
+}
+
+void cerrarVentana(HWND hwnd) {
+
 }
