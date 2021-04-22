@@ -1,15 +1,30 @@
 #include <Windows.h>
 #include "resource.h"
 
-
-BOOL CALLBACK fVentanaPrincipal(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK fRegisterWindow(HWND, UINT, WPARAM, LPARAM);
+//Protipos de los callbacks
+BOOL CALLBACK fLoginDialog(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fRegistroDialog(HWND, UINT, WPARAM, LPARAM);
 
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
 void setEnable(HWND, UINT, bool);
 void handleRegisterClickButton(HWND);
-void createRegisterWindow();
+void createRegisterDialog();
+
+//Creacion de las ventanas
+void createLoginDialog();
+void createModalDialog(HWND);
+
+
+// Alertas
+void mostrarMensaje(HWND, LPCSTR);
+
+
+//Banderas
+
+bool closeLogin = false;
+bool closeRegister = false;
+
 
 HINSTANCE hGlobalInstance;
 
@@ -17,57 +32,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, PSTR cmdLine, int cShow
 	
 	hGlobalInstance = hInstance;
 
-	HWND hVentanaPrincipal = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), 0, fVentanaPrincipal);
-	ShowWindow(hVentanaPrincipal, cShow);
+	//Primera ventana
+	createLoginDialog();
 	
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG));
 
 	while (GetMessage(&msg, 0, 0, 0)) {
 		TranslateMessage(&msg);
-
 		DispatchMessage(&msg);
 	}
-
 
 	return 1;
 }
 
-BOOL CALLBACK fVentanaPrincipal(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-	switch (msg)
-	{
-		
-		case WM_COMMAND:
-		{
-			
-
-			if (HIWORD(wparam) == BN_CLICKED) {
-				switch (LOWORD(wparam))
-				{
-					case BTN_LOGIN:
-						handleLoginClickButton(hwnd);
-						break;
-					case BTN_LOGIN_SALIR:
-						cerrarVentana(hwnd);
-						break;
-					case BTN_REGISTRARSE:
-						handleRegisterClickButton(hwnd);
-						break;
-				}	
-			}
-
-		}
-		break;
-		case WM_CLOSE:
-			DestroyWindow(hwnd);
-		break;
-		case WM_DESTROY:
-			PostQuitMessage(11);
-			break;
-	}
-
-	return false;
-}
 
 
 void handleLoginClickButton(HWND hwnd) {
@@ -81,28 +59,50 @@ void handleLoginClickButton(HWND hwnd) {
 
 	}
 	GetWindowText(hTxtNombre, nombre, ++iTxtLength);
-	MessageBox(hwnd, nombre, "titulo", MB_HELP);
-
 }
 
 
-void setEnable(HWND hwnd, UINT id, bool isEnable) {
-	EnableWindow(GetDlgItem(hwnd, id), isEnable);
-}
 
 
 void handleRegisterClickButton(HWND hwnd) {
 	ShowWindow(hwnd, SW_HIDE);
-	createRegisterWindow();
+	createRegisterDialog();
 }
 
 
-void createRegisterWindow() {
-	HWND registerwindow = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(IDD_DIALOG2), NULL, fRegisterWindow);
+
+
+void createModalDialog(HWND hwnd) {
+	int result = DialogBox(hGlobalInstance, MAKEINTRESOURCE(REGISTRO_SCREEN), hwnd, fRegistroDialog);
+
+	//In getMessage();
+	// EndDialog(hwnd, INT_ID_EXIT);
+
+	//Back to hom
+
+}
+
+
+
+
+//Creacion de ventanas
+
+void createRegisterDialog() {
+	HWND registerwindow = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(REGISTRO_SCREEN), NULL, fRegistroDialog);
 	ShowWindow(registerwindow, SW_SHOW);
 }
 
-BOOL CALLBACK fRegisterWindow(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+void createLoginDialog() {
+	HWND hVentanaLogin = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(LOGIN_SCREEN), NULL, fLoginDialog);
+	ShowWindow(hVentanaLogin, SW_SHOW);
+}
+
+
+
+//Callbacks de los dialogos
+
+
+BOOL CALLBACK fLoginDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg)
 	{
 
@@ -110,20 +110,86 @@ BOOL CALLBACK fRegisterWindow(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 
 
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+			case BTN_LOGIN:
+				handleLoginClickButton(hwnd);
+				break;
+			case BTN_LOGIN_SALIR:
+				closeLogin = true;
+				cerrarVentana(hwnd);
+				break;
+			case BTN_REGISTRARSE:
+				handleRegisterClickButton(hwnd);
+				break;
+			}
+		}
 
 	}
 	break;
 	case WM_CLOSE:
-		DestroyWindow(hwnd);
+		//closeLogin = true;
+		//DestroyWindow(hwnd);
 		break;
 	case WM_DESTROY:
-		PostQuitMessage(11);
+		if (closeLogin) PostQuitMessage(1);
 		break;
 	}
 
 	return false;
 }
 
-void cerrarVentana(HWND hwnd) {
 
+BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+	case WM_COMMAND:
+	{
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+				case BTN_REGISTER_GO_BACK:
+					createLoginDialog();
+					cerrarVentana(hwnd);
+				break;
+			}
+		}
+
+
+	}
+	break;
+	case WM_CLOSE:
+		//closeRegister = true;
+		//DestroyWindow(hwnd);
+		break;
+	case WM_DESTROY:
+		if(closeRegister) PostQuitMessage(2);
+		break;
+	}
+
+	return false;
 }
+
+
+
+//Mensajes
+
+void mostrarMensaje(HWND hwnd, LPCSTR mensaje) {
+	
+	MessageBox(hwnd, mensaje,"Mensaje", MB_HELP);
+}
+
+//Helpers
+
+void setEnable(HWND hwnd, UINT id, bool isEnable) {
+	EnableWindow(GetDlgItem(hwnd, id), isEnable);
+}
+
+
+
+void cerrarVentana(HWND hwnd) {
+	DestroyWindow(hwnd);
+}
+
