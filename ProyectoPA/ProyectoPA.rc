@@ -211,6 +211,77 @@ BEGIN
     PUSHBUTTON      "Guardar",IDC_BUTTON3,499,284,50,14
 END
 
+PRODUCTOS_BAJAS DIALOGEX 0, 0, 311, 302
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Eliminar producto"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Eliminar",IDOK,254,281,50,14
+    LTEXT           "Nombre del producto",IDC_STATIC,23,20,70,8
+    EDITTEXT        IDC_EDIT1,28,33,169,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Buscar",IDC_BUTTON1,235,33,50,14
+    LTEXT           "Datos del producto",IDC_STATIC,29,73,62,8
+    LTEXT           "Cantidad en inventario: ",IDC_STATIC,31,92,79,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,31,122,64,53
+    LTEXT           "Foto 1",IDC_STATIC,32,109,22,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,118,123,64,53
+    LTEXT           "Foto 1",IDC_STATIC,119,110,22,8
+    LTEXT           "Código: ",IDC_STATIC,31,190,28,8
+    LTEXT           "Marca:",IDC_STATIC,31,205,24,8
+    LTEXT           "Descripción:",IDC_STATIC,30,226,41,8
+    LTEXT           "Monto:",IDC_STATIC,33,245,24,8
+END
+
+PRODUCTOS_CAMBIOS DIALOGEX 0, 0, 481, 440
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Modificar producto"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Guardar cambios",IDOK,361,419,95,14
+    LTEXT           "Editar producto",IDC_STATIC,193,25,51,8
+    LTEXT           "Nombre del producto",IDC_STATIC,37,41,70,8
+    EDITTEXT        IDC_EDIT1,34,56,250,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Buscar",IDC_BUTTON1,323,55,50,14
+    LTEXT           "Datos del producto",IDC_STATIC,38,87,62,8
+    LTEXT           "Cantidad en inventario:",IDC_STATIC,35,111,77,8
+    EDITTEXT        IDC_EDIT2,127,107,162,14,ES_AUTOHSCROLL
+    LTEXT           "Foto 1",IDC_STATIC,103,133,22,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,101,151,54,49
+    PUSHBUTTON      "Cambiar foto 1",IDC_BUTTON2,103,212,59,14
+    LTEXT           "Foto 2",IDC_STATIC,265,138,22,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,263,156,54,49
+    PUSHBUTTON      "Cambiar foto 2",IDC_BUTTON4,265,217,59,14
+    LTEXT           " Código:",IDC_STATIC,39,249,28,8
+    EDITTEXT        IDC_EDIT3,82,246,159,14,ES_AUTOHSCROLL
+    LTEXT           "Marca:",IDC_STATIC,40,271,24,8
+    EDITTEXT        IDC_EDIT4,83,268,161,14,ES_AUTOHSCROLL
+    LTEXT           "Descripción:",IDC_STATIC,40,293,41,8
+    EDITTEXT        IDC_EDIT5,41,310,324,49,ES_AUTOHSCROLL
+    LTEXT           "Monto:",IDC_STATIC,45,374,24,8
+    EDITTEXT        IDC_EDIT6,89,371,159,14,ES_AUTOHSCROLL
+END
+
+PRODUCTOS_LISTA DIALOGEX 0, 0, 577, 344
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mis productos"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Mis Productos",IDC_STATIC,268,28,46,8
+    LISTBOX         IDC_LIST1,42,83,202,212,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Lista de productos",IDC_STATIC,45,59,60,8
+    LTEXT           "Datos del producto",IDC_STATIC,292,63,62,8
+    LTEXT           "Nombre:",IDC_STATIC,292,87,30,8
+    LTEXT           "Cantidad en inventario:",IDC_STATIC,294,105,77,8
+    LTEXT           "Foto 1:",IDC_STATIC,295,129,24,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,297,144,66,45
+    LTEXT           "Foto 2:",IDC_STATIC,395,130,24,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME,397,145,66,45
+    LTEXT           "Código:",IDC_STATIC,297,206,26,8
+    LTEXT           "Marca:",IDC_STATIC,298,225,24,8
+    LTEXT           "Descripción:",IDC_STATIC,299,247,41,8
+    LTEXT           "Monto:",IDC_STATIC,301,269,24,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -291,6 +362,30 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 322
     END
+
+    PRODUCTOS_BAJAS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 304
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 295
+    END
+
+    PRODUCTOS_CAMBIOS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 474
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 433
+    END
+
+    PRODUCTOS_LISTA, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 570
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 337
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -341,6 +436,21 @@ BEGIN
 END
 
 PRODUCTOS_ALTAS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+PRODUCTOS_BAJAS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+PRODUCTOS_CAMBIOS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+PRODUCTOS_LISTA AFX_DIALOG_LAYOUT
 BEGIN
     0
 END
