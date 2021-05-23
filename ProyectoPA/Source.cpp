@@ -1,9 +1,15 @@
 #include <Windows.h>
 #include <string>
+#include <iostream>
 #include <fstream>
 #include "resource.h"
 
 using namespace std;
+
+#define USERS_FILE "Usuarios.bin"
+#define PRODUCT_FILE "Productos.bin"
+#define GLOBAL_USER_ID_FILE "GlobalIdUser.txt"
+#define GLOBAL_PRODUCT_ID_FILE "GlobalIdProduct.txt"
 
 struct User {
 	int userId;
@@ -14,7 +20,21 @@ struct User {
 	User* next;
 }*oUser, * aUser, * logged;
 
+struct Product {
+	int productId;
+	int stock;
+	string name;
+	int code;
+	string brand;
+	string description;
+	float price;
+	int userId;
+	Product* prev;
+	Product* next;
+} *oProduct, *aProduct;
+
 int GLOBAL_USER_ID = 1;
+int GLOBAL_PRODUCT_ID = 1;
 fstream archive;
 
 //Protipos de los callbacks
@@ -22,18 +42,22 @@ BOOL CALLBACK fLoginDialog(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fRegistroDialog(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fInfoVendedorDialog(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fEnviosMisEnvios(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fProductosAltas(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fProductosLista(HWND, UINT, WPARAM, LPARAM);
 
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
 void setEnable(HWND, UINT, bool);
 void handleRegisterClickButton(HWND);
-void createRegisterDialog();
 
 //Creacion de las ventanas
+void createRegisterDialog();
 void createLoginDialog();
 void createModalDialog(HWND);
 void createVendedorInfoDialog();
 void createEnviosMisEnvios();
+void createProductosAltas();
+void createProductosLista();
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -48,6 +72,9 @@ bool closeVendedorInfo = false;
 //Helpers
 string getText(int, HWND);
 void freeMemory();
+void saveGlobalId(string, int);
+bool isEmpty(string);
+bool isNotEmpty(string);
 
 
 //Usuarios
@@ -59,12 +86,22 @@ void saveUser(User*);
 // Handlers Register Dialog
 void handleRegistrarUsuario(HWND);
 
+//Productos
+void registrarProducto(HWND);
+void loadProducts();
+void saveProduct(Product *);
+void loadProductId();
 
 HINSTANCE hGlobalInstance;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, PSTR cmdLine, int cShow) {
 	
+	
 	hGlobalInstance = hInstance;
+	oProduct = aProduct = NULL;
+	oUser = aUser = logged = NULL;
+	loadUserId();
+	loadProductId();
 
 	//Primera ventana
 	createLoginDialog();
@@ -106,7 +143,9 @@ void handleLoginClickButton(HWND hwnd) {
 		if (isUserFound) {
 			logged = aUser;
 			aUser = oUser;
-			createEnviosMisEnvios();
+			createProductosLista();
+			//createProductosAltas();	
+			//createEnviosMisEnvios();
 			DestroyWindow(hwnd);
 			isExitLogin = false;
 		}
@@ -175,10 +214,74 @@ void createEnviosMisEnvios() {
 	ShowWindow(ventana, SW_SHOW);
 }
 
+void createProductosAltas() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(PRODUCTOS_ALTAS), NULL, fProductosAltas);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
+void createProductosLista() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(PRODUCTOS_LISTA), NULL, fProductosLista);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
 
 
 //Callbacks de los dialogos
 
+
+
+BOOL CALLBACK fProductosLista(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+		case WM_INITDIALOG: {
+
+			loadProducts();
+			HWND hLbProducts = GetDlgItem(hwnd, LB_PRODUCTOS);
+			int index = 0;
+			while (aProduct != NULL) {
+				SendMessage(hLbProducts, LB_ADDSTRING, NULL, (LPARAM)aProduct->name.c_str());
+				SendMessage(hLbProducts, LB_SETITEMDATA, (WPARAM)index, (LPARAM)aProduct->productId);
+				aUser = aUser->next;
+				index++;
+			}
+			aProduct = oProduct;
+		}break;
+		case WM_COMMAND:
+		{
+			
+		}break;
+	}
+	return false;
+}
+
+
+
+BOOL CALLBACK fProductosAltas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+			case WM_INITDIALOG: {
+				loadProducts();
+			}break;
+			case WM_COMMAND:
+			{
+				if (HIWORD(wparam) == BN_CLICKED) {
+					switch (LOWORD(wparam))
+					{
+						case BTN_PRODUCTOS_ALTAS_SUBMIT:
+							registrarProducto(hwnd);
+						break;
+					}
+				}
+			}break;
+	}
+	return false;
+}
 
 BOOL CALLBACK fLoginDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg)
@@ -236,9 +339,14 @@ BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		if (HIWORD(wparam) == BN_CLICKED) {
 			switch (LOWORD(wparam))
 			{
-				case BTN_REGISTER_GO_BACK:
-					createLoginDialog();
+				case MENU_EXIT:
+					freeMemory();
 					cerrarVentana(hwnd);
+					createLoginDialog();
+				break;
+				case BTN_REGISTER_GO_BACK:
+					cerrarVentana(hwnd);
+					createLoginDialog();
 				break;
 				case BTN_REGISTER_SUBMIT:
 					handleRegistrarUsuario(hwnd);
@@ -360,10 +468,14 @@ void freeMemory() {
 
 
 void loadUsers() {
-	archive.open("Usuarios.bin", ios::binary | ios::in | ios::ate);
+	archive.open(USERS_FILE, ios::binary | ios::in | ios::ate);
+	
 	if (archive.is_open()) {
+		
 		int totalChar = archive.tellg();
 		if (totalChar < 1) {
+			//MessageBox(NULL, "No hay usuarios Registrados", "Exito", MB_ICONWARNING);
+			archive.close();
 			return;
 		}
 		for (int i = 0; i < totalChar / sizeof(User); i++) {
@@ -380,7 +492,7 @@ void loadUsers() {
 				oUser->next = NULL;
 				aUser = oUser;
 				delete reinterpret_cast<char*>(temp);
-				continue;
+				continue; // Linea sin sentido, si ingresa a la condicion no toma en cuenta el else y se pasa a la siguiente iteracion
 			}
 			else {
 				while (aUser->next != NULL)
@@ -398,16 +510,77 @@ void loadUsers() {
 				aUser->userId = temp->userId;
 				aUser = oUser;
 				delete reinterpret_cast<char*>(temp);
-				continue;
+				continue; // Linea sin sentido, saliendo del else se pasa a la siguiente iteracion
 			}
 		}
-		MessageBox(NULL, "Carga de usuarios exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
-		return;
+		//MessageBox(NULL, "Carga de usuarios exitosamente", "Exito", MB_ICONINFORMATION);
 	}
 	else {
-		MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
-		return;
+		MessageBox(NULL, "No se pudo abrir el archivo de usuarios", "ERROR", MB_ICONERROR);
+	}
+}
+
+
+
+void loadProducts() {
+	archive.open(PRODUCT_FILE, ios::binary | ios::in | ios::ate);
+
+	if (archive.is_open()) {
+
+		int totalChar = archive.tellg();
+		if (totalChar < 1) {
+			MessageBox(NULL, "No hay productos Registrados", "Exito", MB_ICONWARNING);
+			archive.close();
+			return;
+		}
+		for (int i = 0; i < totalChar / sizeof(Product); i++) {
+			if (oUser == NULL) {
+				Product* temp = new Product;
+				oProduct = new Product;
+				archive.seekg(i * sizeof(Product));
+				archive.read(reinterpret_cast<char*>(temp), sizeof(Product));
+				oProduct->productId = temp->productId;
+				oProduct->stock = temp->stock;
+				oProduct->name.append(temp->name);
+				oProduct->code  = temp->code;
+				oProduct->brand.append(temp->brand);
+				oProduct->description.append(temp->description);
+				oProduct->userId = temp->userId;
+				oProduct->price = temp->price;
+				oProduct->prev = NULL;
+				oProduct->next = NULL;
+				aProduct = oProduct;
+				delete reinterpret_cast<char*>(temp);
+			}
+			else {
+				while (aProduct->next != NULL)
+					aProduct = aProduct->next;
+				Product* temp = new Product;
+				aProduct->next = new Product;
+				archive.seekg(i * sizeof(Product));
+				archive.read(reinterpret_cast<char*>(temp), sizeof(Product));
+				aProduct->next->prev = aProduct;
+				aProduct = aProduct->next;
+				aProduct->next = NULL;
+				
+				aProduct->productId = temp->productId;
+				aProduct->stock = temp->stock;
+				aProduct->name.append(temp->name);
+				aProduct->code = temp->code;
+				aProduct->brand.append(temp->brand);
+				aProduct->description.append(temp->description);
+				aProduct->userId = temp->userId;
+				aProduct->price = temp->price;
+			
+				aProduct = oProduct;
+				delete reinterpret_cast<char*>(temp);
+			}
+		}
+		archive.close();
+	}
+	else {
+		MessageBox(NULL, "No se pudo abrir el archivo de productos", "ERROR", MB_ICONERROR);
 	}
 }
 
@@ -468,32 +641,162 @@ void handleRegistrarUsuario(HWND hwnd) {
 }
 
 void saveUserId() {
-	archive.open("GlobalIdUser.txt", ios::out | ios::trunc);
+	archive.open(GLOBAL_USER_ID_FILE, ios::out | ios::trunc);
 	if (archive.is_open()) {
 		archive << GLOBAL_USER_ID;
-		MessageBox(NULL, "ID de Usuario Global Guardado exitosamente", "Exito", MB_ICONINFORMATION);
+		//MessageBox(NULL, "ID de Usuario Global Guardado exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
 		return;
 	}
 	else {
-		MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
+		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
 		return;
 	}
 }
 
+
+
 void saveUser(User* origin) {
-	archive.open("Usuarios.bin", ios::binary | ios::out | ios::trunc);
+	archive.open(USERS_FILE, ios::binary | ios::out | ios::trunc);
 	if (archive.is_open()) {
 		while (origin != NULL) {
 			archive.write(reinterpret_cast<char*>(origin), sizeof(User));
 			origin = origin->next;
 		}
-		MessageBox(NULL, "Usuarios guardados exitosamente", "Exito", MB_ICONINFORMATION);
+		//MessageBox(NULL, "Usuarios guardados exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
 		return;
 	}
 	else {
-		MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
+		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
+		return;
+	}
+}
+
+void saveProduct(Product* origin) {
+	archive.open(USERS_FILE, ios::binary | ios::out | ios::trunc);
+	if (archive.is_open()) {
+		while (origin != NULL) {
+			archive.write(reinterpret_cast<char*>(origin), sizeof(Product));
+			origin = origin->next;
+		}
+		archive.close();
+		return;
+	}
+	else {
+		return;
+	}
+}
+
+void saveGlobalId(string file, int value) {
+	archive.open(file, ios::out | ios::trunc);
+	if (archive.is_open()) {
+		archive << value;
+		//MessageBox(NULL, "ID de Usuario Global Guardado exitosamente", "Exito", MB_ICONINFORMATION);
+		archive.close();
+		return;
+	}
+	else {
+		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
+		return;
+	}
+}
+
+void registrarProducto(HWND hwnd) {
+	string nombre = getText(ALTA_PRODUCTO_NOMBRE, hwnd);
+	string inventarioForm = getText(ALTA_PRODUCTO_INVENTARIO, hwnd); //Int
+	string marca = getText(ALTA_PRODUCTO_INVENTARIO, hwnd);
+	string descripcion = getText(ALTA_PRODUCTO_DESCRIPCION, hwnd);
+	string montoForm = getText(ALTA_PRODUCTO_MONTO, hwnd); // Float
+	string codigoForm = getText(ALTA_PRODUCTO_CODIGO, hwnd);
+	
+	if (
+		isNotEmpty(nombre) &&
+		isNotEmpty(inventarioForm) && 
+		isNotEmpty(marca) &&
+		isNotEmpty(descripcion) && 
+		isNotEmpty(montoForm) &&
+		isNotEmpty(codigoForm) 
+	) {
+		if (oProduct != NULL) { //Ya existe por lo menos 1 registro
+			bool found = false;
+			while (aProduct != NULL) {
+				if (aProduct->name.compare(nombre) == 0 && aProduct->userId == logged->userId) {
+					found = true;
+					break;
+				}
+				aProduct = aProduct->next;
+			}
+			aProduct = oProduct;
+			if (found) {
+				MessageBox(NULL, "Producto repetido, por favor ingrese otro nombre", "ERROR", MB_ICONERROR);
+				return;
+			}
+		}
+
+		if (oProduct == NULL) { //La primera vez que se hace un registro
+			oProduct = new Product;
+			oProduct->name.append(nombre);
+			oProduct->brand.append(marca);
+			oProduct->stock = stoi(inventarioForm);
+			oProduct->code = stoi(codigoForm);
+			oProduct->description.append(descripcion);
+			oProduct->price = stof(montoForm);
+			oProduct->userId = logged->userId;
+			oProduct->productId = GLOBAL_PRODUCT_ID++;
+			oProduct->prev = NULL;
+			oProduct->next = NULL;
+		}
+		else { //Tenemos mas de un registro
+			while (aProduct->next != NULL)
+				aProduct = aProduct->next;
+			aProduct->next = new Product;
+			aProduct->next->prev = aProduct;
+			aProduct = aProduct->next;
+			aProduct->next = NULL;
+			aProduct->productId = GLOBAL_PRODUCT_ID++;
+			aProduct->name.append(nombre);
+			aProduct->brand.append(marca);
+			aProduct->stock = stoi(inventarioForm);
+			aProduct->code = stoi(codigoForm);
+			aProduct->description.append(descripcion);
+			aProduct->price = stof(montoForm);
+			aProduct->userId = logged->userId;
+		}
+		saveProduct(oProduct);
+		saveGlobalId(GLOBAL_PRODUCT_ID_FILE, GLOBAL_PRODUCT_ID);
+		aProduct = oProduct;
+		MessageBox(NULL, "Producto guardado con exito", "ERROR", MB_ICONINFORMATION);
+		//DestroyWindow(hwnd);
+	}
+	else {
+		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+	}
+}
+
+
+bool isEmpty(string str) {
+	return str.compare("") == 0;
+}
+
+bool isNotEmpty(string str) {
+	return !isEmpty(str);
+}
+
+
+void loadUserId() {
+	archive.open(GLOBAL_USER_ID_FILE, ios::in);
+	if (archive.is_open()) {
+		archive >> GLOBAL_USER_ID;
+		archive.close();
+	}
+}
+
+void loadProductId() {
+	archive.open(GLOBAL_PRODUCT_ID_FILE, ios::in);
+	if (archive.is_open()) {
+		archive >> GLOBAL_PRODUCT_ID;
+		archive.close();
 		return;
 	}
 }

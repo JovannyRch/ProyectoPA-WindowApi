@@ -41,15 +41,17 @@
 #define IDC_EDIT7                       1034
 #define IDC_EDIT1                       1034
 #define IDC_EDIT8                       1035
-#define IDC_EDIT9                       1036
-#define IDC_EDIT10                      1037
-#define IDC_EDIT11                      1038
-#define IDC_EDIT12                      1039
-#define IDC_BUTTON3                     1040
+#define ALTA_PRODUCTO_CODIGO            1036
+#define ALTA_PRODUCTO_MARCA             1037
+#define ALTA_PRODUCTO_DESCRIPCION       1038
+#define ALTA_PRODUCTO_MONTO             1039
+#define BTN_PRODUCTOS_ALTAS_SUBMIT      1040
 #define TXT_R_NOMBRE                    1041
 #define TXT_R_PASSWORD                  1042
-#define TXT_R_NOMBRE2                   1043
 #define TXT_R_USERNAME                  1043
+#define ALTA_PRODUCTO_NOMBRE            1043
+#define ALTA_PRODUCTO_INVENTARIO        1044
+#define LB_PRODUCTOS                    1045
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -58,14 +60,16 @@
 #define ID_ENV40006                     40006
 #define ID_PRODUCTOS_VERTODOS           40007
 #define ID_ENV40008                     40008
+#define ID_INFORMACI40009               40009
+#define MENU_EXIT                       40010
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
-#define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1043
+#define _APS_NEXT_COMMAND_VALUE         40011
+#define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
