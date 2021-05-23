@@ -14,7 +14,6 @@
 #define PRODUCTOS_ALTAS                 118
 #define PRODUCTOS_BAJAS                 120
 #define PRODUCTOS_CAMBIOS               122
-#define IDD_DIALOG1                     124
 #define PRODUCTOS_LISTA                 124
 #define BTN_LOGIN                       1001
 #define BTN_LOGIN_SALIR                 1002
@@ -47,6 +46,10 @@
 #define IDC_EDIT11                      1038
 #define IDC_EDIT12                      1039
 #define IDC_BUTTON3                     1040
+#define TXT_R_NOMBRE                    1041
+#define TXT_R_PASSWORD                  1042
+#define TXT_R_NOMBRE2                   1043
+#define TXT_R_USERNAME                  1043
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -62,7 +65,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1041
+#define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
