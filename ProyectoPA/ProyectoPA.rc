@@ -465,7 +465,7 @@ END
 
 IDR_MENU1 MENU
 BEGIN
-    MENUITEM "Información del vendedor",    ID_INFORMACI40009
+    MENUITEM "Información del vendedor",    ID_INFO_VENDEDOR
     POPUP "Productos"
     BEGIN
         MENUITEM "Altas",                       ID_PRODUCTOS_ALTAS
@@ -475,10 +475,10 @@ BEGIN
     END
     POPUP "Envíos"
     BEGIN
-        MENUITEM "Altas",                       ID_ENV40004
-        MENUITEM "Bajas",                       ID_ENV40005
-        MENUITEM "Cambios",                     ID_ENV40006
-        MENUITEM "Ver todos",                   ID_ENV40008
+        MENUITEM "Altas",                       ID_ENVIOS_ALTAS
+        MENUITEM "Bajas",                       ID_ENVIOS_BAJAS
+        MENUITEM "Cambios",                     ID_ENVIOS_CAMBIOS
+        MENUITEM "Ver todos",                   ID_ENVIOS_LISTA
     END
     MENUITEM "Salir",                       40010
 END

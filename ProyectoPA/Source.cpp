@@ -59,6 +59,7 @@ void createEnviosMisEnvios();
 void createProductosAltas();
 void createProductosLista();
 
+
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
 
@@ -66,8 +67,19 @@ void mostrarMensaje(HWND, LPCSTR);
 //Banderas
 
 bool isExitLogin = false;
-bool closeRegister = false;
-bool closeVendedorInfo = false;
+bool isExitRegister = false;
+bool isInfoVendedorExit = false;
+
+bool isExitProductosAlta = false;
+bool isExitProductosBaja = false;
+bool isExitProductosCambios = false;
+bool isExitProductosLista = false;
+
+bool isExitEnviosAlta = false;
+bool isExitEnviosBajas = false;
+bool isExitEnviosLista = false;
+bool isExitEnviosCambios = false;
+
 
 //Helpers
 string getText(int, HWND);
@@ -91,6 +103,9 @@ void registrarProducto(HWND);
 void loadProducts();
 void saveProduct(Product *);
 void loadProductId();
+
+//Menu
+void handleMenu(UINT, HWND);
 
 HINSTANCE hGlobalInstance;
 
@@ -253,7 +268,15 @@ BOOL CALLBACK fProductosLista(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		}break;
 		case WM_COMMAND:
 		{
-			
+			if (HIWORD(wparam) == BN_CLICKED) {
+				switch (LOWORD(wparam))
+				{
+					default:
+						handleMenu(LOWORD(wparam), hwnd);
+						isExitProductosLista = false;
+						break;
+				}
+			}
 		}break;
 	}
 	return false;
@@ -276,9 +299,23 @@ BOOL CALLBACK fProductosAltas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 						case BTN_PRODUCTOS_ALTAS_SUBMIT:
 							registrarProducto(hwnd);
 						break;
+						default:
+							handleMenu(LOWORD(wparam), hwnd);
+							isExitProductosAlta = false;
+							break;
 					}
+					
 				}
 			}break;
+			case WM_CLOSE:
+				isExitProductosAlta = true;
+				DestroyWindow(hwnd);
+				break;
+			case WM_DESTROY:
+				if (isExitProductosAlta) {
+					PostQuitMessage(117);
+				}
+				break;
 	}
 	return false;
 }
@@ -339,17 +376,16 @@ BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		if (HIWORD(wparam) == BN_CLICKED) {
 			switch (LOWORD(wparam))
 			{
-				case MENU_EXIT:
-					freeMemory();
-					cerrarVentana(hwnd);
-					createLoginDialog();
-				break;
 				case BTN_REGISTER_GO_BACK:
 					cerrarVentana(hwnd);
 					createLoginDialog();
 				break;
 				case BTN_REGISTER_SUBMIT:
 					handleRegistrarUsuario(hwnd);
+					break;
+				default:
+					handleMenu(LOWORD(wparam), hwnd);
+					isExitRegister = false;
 					break;
 			}
 		}
@@ -358,11 +394,13 @@ BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	}
 	break;
 	case WM_CLOSE:
-		//closeRegister = true;
-		//DestroyWindow(hwnd);
+		isExitRegister = true;
+		DestroyWindow(hwnd);
 		break;
 	case WM_DESTROY:
-		if(closeRegister) PostQuitMessage(2);
+		if (isExitRegister) {
+			PostQuitMessage(2);
+		}
 		break;
 	}
 
@@ -376,14 +414,23 @@ BOOL CALLBACK fInfoVendedorDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 	{
 	case WM_COMMAND:
 	{
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+			default:
+				handleMenu(LOWORD(wparam), hwnd);
+				isInfoVendedorExit = false;
+				break;
+			}
+		}
 	}
 	break;
 	case WM_CLOSE:
-		//closeVendedorInfo = true;
-		//DestroyWindow(hwnd);
+		isInfoVendedorExit = true;
+		DestroyWindow(hwnd);
 		break;
 	case WM_DESTROY:
-		if (closeRegister) PostQuitMessage(2);
+		if (isInfoVendedorExit) PostQuitMessage(2);
 		break;
 	}
 	return false;
@@ -397,11 +444,11 @@ BOOL CALLBACK fEnviosMisEnvios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	}
 	break;
 	case WM_CLOSE:
-		//closeVendedorInfo = true;
-		//DestroyWindow(hwnd);
+		isExitEnviosLista = true;
+		DestroyWindow(hwnd);
 		break;
 	case WM_DESTROY:
-		if (closeRegister) PostQuitMessage(2);
+		if (isExitEnviosLista) PostQuitMessage(2);
 		break;
 	}
 	return false;
@@ -530,7 +577,6 @@ void loadProducts() {
 
 		int totalChar = archive.tellg();
 		if (totalChar < 1) {
-			MessageBox(NULL, "No hay productos Registrados", "Exito", MB_ICONWARNING);
 			archive.close();
 			return;
 		}
@@ -554,8 +600,9 @@ void loadProducts() {
 				delete reinterpret_cast<char*>(temp);
 			}
 			else {
-				while (aProduct->next != NULL)
+				while (aProduct->next != NULL) {
 					aProduct = aProduct->next;
+				}
 				Product* temp = new Product;
 				aProduct->next = new Product;
 				archive.seekg(i * sizeof(Product));
@@ -578,9 +625,6 @@ void loadProducts() {
 			}
 		}
 		archive.close();
-	}
-	else {
-		MessageBox(NULL, "No se pudo abrir el archivo de productos", "ERROR", MB_ICONERROR);
 	}
 }
 
@@ -621,8 +665,9 @@ void handleRegistrarUsuario(HWND hwnd) {
 		oUser->next = NULL;
 	}
 	else { //Tenemos mas de un usuario
-		while (aUser->next != NULL)
+		while (aUser->next != NULL) {
 			aUser = aUser->next;
+		}
 		aUser->next = new User;
 		aUser->next->prev = aUser;
 		aUser = aUser->next;
@@ -644,13 +689,7 @@ void saveUserId() {
 	archive.open(GLOBAL_USER_ID_FILE, ios::out | ios::trunc);
 	if (archive.is_open()) {
 		archive << GLOBAL_USER_ID;
-		//MessageBox(NULL, "ID de Usuario Global Guardado exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
-		return;
-	}
-	else {
-		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
-		return;
 	}
 }
 
@@ -663,13 +702,7 @@ void saveUser(User* origin) {
 			archive.write(reinterpret_cast<char*>(origin), sizeof(User));
 			origin = origin->next;
 		}
-		//MessageBox(NULL, "Usuarios guardados exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
-		return;
-	}
-	else {
-		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
-		return;
 	}
 }
 
@@ -681,10 +714,6 @@ void saveProduct(Product* origin) {
 			origin = origin->next;
 		}
 		archive.close();
-		return;
-	}
-	else {
-		return;
 	}
 }
 
@@ -692,13 +721,7 @@ void saveGlobalId(string file, int value) {
 	archive.open(file, ios::out | ios::trunc);
 	if (archive.is_open()) {
 		archive << value;
-		//MessageBox(NULL, "ID de Usuario Global Guardado exitosamente", "Exito", MB_ICONINFORMATION);
 		archive.close();
-		return;
-	}
-	else {
-		//MessageBox(NULL, "No se pudo abrir el archivo", "ERROR", MB_ICONERROR);
-		return;
 	}
 }
 
@@ -748,8 +771,9 @@ void registrarProducto(HWND hwnd) {
 			oProduct->next = NULL;
 		}
 		else { //Tenemos mas de un registro
-			while (aProduct->next != NULL)
+			while (aProduct->next != NULL) {
 				aProduct = aProduct->next;
+			}
 			aProduct->next = new Product;
 			aProduct->next->prev = aProduct;
 			aProduct = aProduct->next;
@@ -799,4 +823,42 @@ void loadProductId() {
 		archive.close();
 		return;
 	}
+}
+
+
+void handleMenu(UINT wparam, HWND hwnd) {
+	switch (wparam)
+	{
+		
+		case ID_ENVIOS_LISTA:
+			createEnviosMisEnvios();
+			break;
+		case ID_ENVIOS_ALTAS:
+			break;
+		case ID_ENVIOS_BAJAS:
+			break;
+		case ID_ENVIOS_CAMBIOS:
+			break;
+		case ID_PRODUCTOS_ALTAS:
+			createProductosAltas();
+			break;
+		case ID_PRODUCTOS_BAJAS:
+			break;
+		case ID_PRODUCTOS_VERTODOS:
+			createProductosLista();
+			break;
+		case ID_PRODUCTOS_CAMBIOS:
+			
+			break;
+		case ID_INFO_VENDEDOR:
+			createVendedorInfoDialog();
+			break;
+		case MENU_EXIT:
+			exit(3);
+			break;
+		default:
+			MessageBox(NULL, "Default case", "Exito", MB_ICONWARNING);
+			break;
+	}
+	DestroyWindow(hwnd);
 }
