@@ -25,6 +25,7 @@
 #define TXT_NOMBRE_VENDEDOR             1014
 #define TXT_ALIAS_EMPRESA               1015
 #define BTN_INFO_VENDEDOR               1016
+#define BTN_GUARDAR_INFO_VENDEDOR       1016
 #define PC_FOTO                         1020
 #define BTN_SUBIR_FOTO                  1021
 #define BTN_REGRESAR_INFO_VENDEROR      1022
@@ -46,12 +47,15 @@
 #define ALTA_PRODUCTO_DESCRIPCION       1038
 #define ALTA_PRODUCTO_MONTO             1039
 #define BTN_PRODUCTOS_ALTAS_SUBMIT      1040
-#define TXT_R_NOMBRE                    1041
 #define TXT_R_PASSWORD                  1042
 #define TXT_R_USERNAME                  1043
 #define ALTA_PRODUCTO_NOMBRE            1043
 #define ALTA_PRODUCTO_INVENTARIO        1044
 #define LB_PRODUCTOS                    1045
+#define LBL_NOMBRE_USUARIO              1046
+#define BTN_PRODUCTOS_BAJAS_ELIMINAR    1047
+#define BTN_PRODUCTOS_BAJAS_BUSCAR      1047
+#define PRODUCTOS_BAJAS_NOMBRE          1048
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -74,7 +78,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40016
-#define _APS_NEXT_CONTROL_VALUE         1046
+#define _APS_NEXT_CONTROL_VALUE         1049
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
