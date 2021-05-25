@@ -16,8 +16,8 @@ using namespace std;
 #define GLOBAL_ENVIO_ID_FILE "GlobalIdEnvio.txt"
 #define BAJA 1
 #define CAMBIO 2
-#define ENVIADO "ENVIADO"
-#define PENDIENTE "PENDIENTE DE ENVIO"
+#define STATUS_ENVIADO "ENVIADO"
+#define STATUS_PENDIENTE "PENDIENTE DE ENVIO"
 
 struct User {
 	int userId;
@@ -45,7 +45,7 @@ struct Product {
 
 struct Envio {
 	int envioId = 0;
-	struct Producto* producto;
+	struct Product* producto;
 	int productoId = 0;
 	int cantidad = 0;
 	float total = 0.0;
@@ -54,8 +54,11 @@ struct Envio {
 	string estado = "";
 	string mensaje = "";
 	string fecha = "";
-	string status = PENDIENTE;
-};
+	string status = STATUS_PENDIENTE;
+	Envio* prev = NULL;
+	Envio* next = NULL;
+	int userId = 0;
+} *oEnvio, *aEnvio;
 
 int GLOBAL_USER_ID = 1;
 int GLOBAL_PRODUCT_ID = 1;
@@ -72,6 +75,8 @@ BOOL CALLBACK fProductosLista(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosBajas(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosCambios(HWND, UINT, WPARAM, LPARAM);
 
+BOOL CALLBACK fEnviosAltas(HWND, UINT, WPARAM, LPARAM);
+
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
 void setEnable(HWND, UINT, bool);
@@ -87,7 +92,8 @@ void createProductosAltas();
 void createProductosLista();
 void createProductosBajas();
 void createProductosCambios();
-void buscarProdutoPorId(HWND, Product* , int);
+
+void createEnviosAltas();
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -121,6 +127,11 @@ void setText(HWND, int, string);
 string FloatToString(float);
 
 
+//validadoros
+
+bool isNumber(string);
+
+
 //Usuarios
 void loadUsers();
 void saveUserId();
@@ -128,6 +139,7 @@ void loadUserId();
 void saveUser(User*);
 void updateUser(User*, User*);
 void actualizarInformacionVendedor(HWND hwnd);
+
 
 // Handlers Register Dialog
 void handleRegistrarUsuario(HWND);
@@ -142,7 +154,17 @@ void buscarProducto(HWND, Product*, int);
 void eliminarProducto(HWND);
 void updateProducto(Product*, Product*);
 void guardarCambios(HWND);
+void buscarProdutoPorId(HWND, Product* , int);
+void calcularMonto(HWND);
 HWND hLbProducts;
+
+
+//Envios
+void crearEnvio(HWND);
+void saveEnvio(Envio*);
+void loadEnvios();
+void loadEnvioId();
+HWND hLbEnvios;
 
 //Menu
 void handleMenu(UINT, HWND);
@@ -155,8 +177,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, PSTR cmdLine, int cShow
 	hGlobalInstance = hInstance;
 	oProduct = aProduct = NULL;
 	oUser = aUser = logged = NULL;
+	oEnvio = aEnvio = NULL;
 	loadUserId();
 	loadProductId();
+	loadEnvioId();
 
 	//Primera ventana
 	createLoginDialog();
@@ -284,6 +308,14 @@ void createProductosCambios() {
 	ShowWindow(ventana, SW_SHOW);
 }
 
+
+void createEnviosAltas() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(ENVIOS_ALTA), NULL, fEnviosAltas);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
 //Callbacks de los dialogos
 
 
@@ -310,6 +342,54 @@ BOOL CALLBACK fPrototipo(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	}
 	return false;
 }*/
+
+
+BOOL CALLBACK fEnviosAltas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+	case WM_INITDIALOG: {
+		loadProducts();
+		hLbProducts = GetDlgItem(hwnd, LB_ENVIOS_ALTA);
+		int index = 0;
+		while (aProduct != NULL) {
+			if (aProduct->stock > 0) {
+				SendMessage(hLbProducts, LB_ADDSTRING, NULL, (LPARAM)aProduct->name.c_str());
+				SendMessage(hLbProducts, LB_SETITEMDATA, (WPARAM)index, (LPARAM)aProduct->productId);
+				aProduct = aProduct->next;
+				index++;
+			}
+		}
+		aProduct = oProduct;
+	}break;
+	case WM_COMMAND:
+	{
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+			case BTN_CALCULAR_MONTO:
+				calcularMonto(hwnd);
+				break;
+
+			case ENVIO_ALTAS_CREAR:
+				crearEnvio(hwnd);
+				break;
+				
+			default:
+				handleMenu(LOWORD(wparam), hwnd);
+				isExitProductosLista = false;
+				break;
+			}
+		}
+		if (HIWORD(wparam) == LBN_SELCHANGE) {
+			int index = SendMessage(hLbProducts, LB_GETCURSEL, NULL, NULL);
+			int productId = SendMessage(hLbProducts, LB_GETITEMDATA, index, NULL);
+			buscarProdutoPorId(hwnd, oProduct, productId);
+		}
+	}break;
+	}
+	return false;
+}
 
 BOOL CALLBACK fProductosCambios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg)
@@ -401,6 +481,14 @@ BOOL CALLBACK fProductosLista(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				int index = SendMessage(hLbProducts, LB_GETCURSEL, NULL, NULL);
 				int productId = SendMessage(hLbProducts, LB_GETITEMDATA, index, NULL);
 				buscarProdutoPorId(hwnd, oProduct, productId);
+				if (productoActual != NULL) {
+					setText(hwnd, P_LISTA_NOMBRE, productoActual->name);
+					setText(hwnd, P_LISTA_CANTIDAD, FloatToString(productoActual->stock));
+					setText(hwnd, P_LISTA_CODIGO, FloatToString(productoActual->code));
+					setText(hwnd, P_LISTA_DESCRIPCION, productoActual->description);
+					setText(hwnd, P_LISTA_MARCA, productoActual->brand);
+					setText(hwnd, P_LISTA_MONTO, FloatToString(productoActual->price));
+				}
 			}
 		}break;
 	}
@@ -572,8 +660,23 @@ BOOL CALLBACK fEnviosMisEnvios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	switch (msg)
 	{
 	case WM_INITDIALOG: {
-		HWND hLblUserName = GetDlgItem(hwnd, LBL_NOMBRE_USUARIO);
-		SetWindowText(hLblUserName, logged->alias.c_str());
+		if (logged != NULL) {
+			HWND hLblUserName = GetDlgItem(hwnd, LBL_NOMBRE_USUARIO);
+			SetWindowText(hLblUserName, logged->alias.c_str());
+		}
+		loadEnvios();
+		hLbEnvios = GetDlgItem(hwnd, LB_ENVIOS_ALTA);
+		int index = 0;
+		while (aEnvio != NULL) {
+			Product* p = aEnvio->producto;
+			string label = aEnvio->colonia + ", " + aEnvio->ciudad + ", "+ aEnvio->estado + " | "+p->name+" | "+aEnvio->status;
+			SendMessage(hLbEnvios, LB_ADDSTRING, NULL, (LPARAM)label.c_str());
+			SendMessage(hLbEnvios, LB_SETITEMDATA, (WPARAM)index, (LPARAM)aEnvio->envioId);
+			aEnvio = aEnvio->next;
+			index++;
+		}
+		aEnvio = oEnvio;
+
 	}break;
 	case WM_COMMAND:
 	{
@@ -775,6 +878,63 @@ void loadProducts() {
 }
 
 
+
+void loadEnvios() {
+	archive.open(ENVIOS_FILE, ios::binary | ios::in | ios::ate);
+
+	if (archive.is_open()) {
+
+		int totalChar = archive.tellg();
+		if (totalChar < 1) {
+			archive.close();
+			return;
+		}
+		for (int i = 0; i < totalChar / sizeof(Envio); i++) {
+			if (oEnvio == NULL) {
+				Envio* temp = new Envio;
+				oEnvio= new Envio;
+				archive.seekg(i * sizeof(Envio));
+				archive.read(reinterpret_cast<char*>(temp), sizeof(Envio));
+				oEnvio->cantidad = temp->cantidad;
+				oEnvio->ciudad = temp->ciudad;
+				oEnvio->colonia = temp->colonia;
+				oEnvio->envioId = temp->envioId;
+				oEnvio->estado = temp->estado;
+				oEnvio->fecha = temp->fecha;
+				oEnvio->mensaje = temp->mensaje;
+				oEnvio->prev = NULL;
+				oEnvio->next = NULL;
+				aEnvio = oEnvio;
+				delete reinterpret_cast<char*>(temp);
+			}
+			else {
+				while (aEnvio->next != NULL) {
+					aEnvio = aEnvio->next;
+				}
+				Envio* temp = new Envio;
+				aEnvio->next = new Envio;
+				archive.seekg(i * sizeof(Envio));
+				archive.read(reinterpret_cast<char*>(temp), sizeof(Envio));
+				aEnvio->next->prev = aEnvio;
+				aEnvio = aEnvio->next;
+				aEnvio->next = NULL;
+
+				aEnvio->cantidad = temp->cantidad;
+				aEnvio->ciudad = temp->ciudad;
+				aEnvio->colonia = temp->colonia;
+				aEnvio->envioId = temp->envioId;
+				aEnvio->estado = temp->estado;
+				aEnvio->fecha = temp->fecha;
+				aEnvio->mensaje = temp->mensaje;
+
+				aEnvio = oEnvio;
+				delete reinterpret_cast<char*>(temp);
+			}
+		}
+		archive.close();
+	}
+}
+
 void handleRegistrarUsuario(HWND hwnd) {
 	string password = getText(TXT_R_PASSWORD, hwnd);
 	string username = getText(TXT_R_USERNAME, hwnd);
@@ -860,6 +1020,17 @@ void saveProduct(Product* origin) {
 	if (archive.is_open()) {
 		while (origin != NULL) {
 			archive.write(reinterpret_cast<char*>(origin), sizeof(Product));
+			origin = origin->next;
+		}
+		archive.close();
+	}
+}
+
+void saveEnvio(Envio* origin) {
+	archive.open(ENVIOS_FILE, ios::binary | ios::out | ios::trunc);
+	if (archive.is_open()) {
+		while (origin != NULL) {
+			archive.write(reinterpret_cast<char*>(origin), sizeof(Envio));
 			origin = origin->next;
 		}
 		archive.close();
@@ -973,6 +1144,14 @@ void loadProductId() {
 	}
 }
 
+void loadEnvioId() {
+	archive.open(GLOBAL_ENVIO_ID_FILE, ios::in);
+	if (archive.is_open()) {
+		archive >> GLOBAL_ENVIO_ID;
+		archive.close();
+	}
+}
+
 
 void handleMenu(UINT wparam, HWND hwnd) {
 	freeMemory();
@@ -983,6 +1162,7 @@ void handleMenu(UINT wparam, HWND hwnd) {
 			createEnviosMisEnvios();
 			break;
 		case ID_ENVIOS_ALTAS:
+			createEnviosAltas();
 			break;
 		case ID_ENVIOS_BAJAS:
 			break;
@@ -1214,12 +1394,139 @@ void buscarProdutoPorId(HWND hwnd, Product* origin, int productId) {
 		}
 		origin = origin->next;
 	}
-	if (productoActual != NULL) {
-		setText(hwnd, P_LISTA_NOMBRE, productoActual->name);
-		setText(hwnd, P_LISTA_CANTIDAD, FloatToString(productoActual->stock));
-		setText(hwnd, P_LISTA_CODIGO, FloatToString(productoActual->code));
-		setText(hwnd, P_LISTA_DESCRIPCION, productoActual->description);
-		setText(hwnd, P_LISTA_MARCA, productoActual->brand);
-		setText(hwnd, P_LISTA_MONTO, FloatToString(productoActual->price));
+}
+
+
+void crearEnvio(HWND hwnd) {
+
+	if (productoActual == NULL) {
+		MessageBox(NULL, "Seleccione un producto", "ERROR", MB_ICONEXCLAMATION);
+		return;
 	}
+
+	string cantidadForm = getText(ENVIO_ALTAS_CANTIDAD, hwnd);
+	string calle = getText(ENVIO_ALTAS_CALLE, hwnd);
+	string colonia = getText(ENVIO_ALTAS_COLONIA, hwnd);
+	string estado = getText(ENVIO_ALTAS_ESTADO, hwnd);
+	string ciudad = getText(ENVIO_ALTAS_CIUDAD, hwnd);
+	string mensaje = getText(ENVIO_ALTAS_MENSAJE, hwnd);
+
+	//TODO: add date
+	if (isEmpty(cantidadForm) || isEmpty(calle) || isEmpty(colonia) || isEmpty(estado) || isEmpty(ciudad) || isEmpty(mensaje)) {
+		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		return;
+	}
+
+	
+
+	if (oEnvio == NULL) { //La primera vez que registramos un Usuario
+		oEnvio = new Envio;
+		oEnvio->cantidad = stoi(cantidadForm);
+		oEnvio->ciudad = ciudad;
+		oEnvio->colonia = colonia;
+		oEnvio->estado = estado;
+		oEnvio->status = STATUS_PENDIENTE;
+		oEnvio->envioId = GLOBAL_ENVIO_ID++;
+		oEnvio->userId = logged->userId;
+		oEnvio->prev = NULL;
+		oEnvio->next = NULL;
+	}
+	else { //Tenemos mas de un usuario
+		while (aEnvio->next != NULL) {
+			aEnvio = aEnvio->next;
+		}
+		aEnvio->next = new Envio;
+		aEnvio->next->prev = aEnvio;
+		aEnvio = aEnvio->next;
+		aEnvio->next = NULL;
+		aEnvio->cantidad = stoi(cantidadForm);
+		aEnvio->ciudad = ciudad;
+		aEnvio->colonia = colonia;
+		aEnvio->estado = estado;
+		aEnvio->status = STATUS_PENDIENTE;
+		aEnvio->envioId = GLOBAL_ENVIO_ID++;
+		aEnvio->userId = logged->userId;
+	}
+	saveEnvio(oEnvio);
+	saveGlobalId(GLOBAL_ENVIO_ID_FILE, GLOBAL_ENVIO_ID);
+
+	aEnvio = oEnvio;
+	MessageBox(NULL, "Envio creado con exito", "Mensaje", MB_ICONINFORMATION);
+}
+
+
+bool isNumber(string str) {
+	int i = 0, j = str.length() - 1;
+
+	while (i < str.length() && str[i] == ' ')
+		i++;
+	while (j >= 0 && str[j] == ' ')
+		j--;
+
+	if (i > j)
+		return 0;
+
+	if (i == j && !(str[i] >= '0' && str[i] <= '9'))
+		return 0;
+
+	if (str[i] != '.' && str[i] != '+'
+		&& str[i] != '-' && !(str[i] >= '0' && str[i] <= '9'))
+		return 0;
+
+	bool flagDotOrE = false;
+
+	for (i; i <= j; i++) {
+		if (str[i] != 'e' && str[i] != '.'
+			&& str[i] != '+' && str[i] != '-'
+			&& !(str[i] >= '0' && str[i] <= '9'))
+			return 0;
+
+		if (str[i] == '.') {
+			if (flagDotOrE == true)
+				return 0;
+
+			if (i + 1 > str.length())
+				return 0;
+
+			if (!(str[i + 1] >= '0' && str[i + 1] <= '9'))
+				return 0;
+		}
+
+		else if (str[i] == 'e') {
+			flagDotOrE = true;
+
+			if (!(str[i - 1] >= '0' && str[i - 1] <= '9'))
+				return 0;
+
+			if (i + 1 > str.length())
+				return 0;
+
+			if (str[i + 1] != '+' && str[i + 1] != '-'
+				&& (str[i + 1] >= '0' && str[i] <= '9'))
+				return 0;
+		}
+	}
+
+	return 1;
+}
+
+
+void calcularMonto(HWND hwnd) {
+	if (productoActual == NULL) {
+		MessageBox(NULL, "Seleccione un producto", "ERROR", MB_ICONEXCLAMATION);
+		return;
+	}
+	string cantidadForm = getText(ENVIO_ALTAS_CANTIDAD, hwnd);
+	if (isEmpty(cantidadForm)) {
+		MessageBox(NULL, "Seleccione un producto", "ERROR", MB_ICONEXCLAMATION);
+		return;
+	}
+
+	if (!isNumber(cantidadForm)) {
+		MessageBox(NULL, "Ingrese una cantidad válida", "ERROR", MB_ICONEXCLAMATION);
+		return;
+	}
+	int cantidad = stoi(cantidadForm);
+	float total = cantidad * productoActual->price;
+	setText(hwnd, ENVIO_ALTAS_MONTO, FloatToString(total));
 }

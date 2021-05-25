@@ -38,12 +38,15 @@
 #define IDC_EDIT4                       1030
 #define IDC_EDIT5                       1031
 #define IDC_EDIT6                       1032
+#define ENVIO_ALTAS_CIUDAD              1032
 #define IDC_DATETIMEPICKER1             1033
 #define IDC_EDIT7                       1034
 #define IDC_EDIT1                       1034
 #define P_CAMBIOS_NOMBRE                1034
 #define P_LISTA_NOMBRE                  1034
+#define ENVIO_ALTAS_ESTADO              1034
 #define IDC_EDIT8                       1035
+#define ENVIO_ALTAS_MENSAJE             1035
 #define ALTA_PRODUCTO_CODIGO            1036
 #define ALTA_PRODUCTO_MARCA             1037
 #define ALTA_PRODUCTO_DESCRIPCION       1038
@@ -76,6 +79,15 @@
 #define P_LISTA_MARCA                   1065
 #define P_LISTA_DESCRIPCION             1066
 #define P_LISTA_MONTO                   1067
+#define LBL_ENVIOS_ALTA                 1068
+#define LB_ENVIOS_ALTA                  1068
+#define ENVIO_ALTAS_CANTIDAD            1069
+#define ENVIO_ALTAS_CALLE               1070
+#define ENVIO_ALTAS_COLONIA             1071
+#define ENVIO_ALTAS_MONTO               1072
+#define ENVIO_ALTAS_CREAR               1073
+#define BTN_CALCULAR_MONTO              1074
+#define LB_MIS_ENVIOS                   1075
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -98,7 +110,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40016
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_CONTROL_VALUE         1076
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
