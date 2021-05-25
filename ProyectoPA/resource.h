@@ -42,6 +42,7 @@
 #define IDC_EDIT7                       1034
 #define IDC_EDIT1                       1034
 #define P_CAMBIOS_NOMBRE                1034
+#define P_LISTA_NOMBRE                  1034
 #define IDC_EDIT8                       1035
 #define ALTA_PRODUCTO_CODIGO            1036
 #define ALTA_PRODUCTO_MARCA             1037
@@ -70,6 +71,11 @@
 #define P_CAMBIOS_MONTO                 1060
 #define P_CAMBIOS_GUARDAR               1061
 #define P_CAMBIOS_BUSCAR                1062
+#define P_LISTA_CANTIDAD                1063
+#define P_LISTA_CODIGO                  1064
+#define P_LISTA_MARCA                   1065
+#define P_LISTA_DESCRIPCION             1066
+#define P_LISTA_MONTO                   1067
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -92,7 +98,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40016
-#define _APS_NEXT_CONTROL_VALUE         1063
+#define _APS_NEXT_CONTROL_VALUE         1068
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

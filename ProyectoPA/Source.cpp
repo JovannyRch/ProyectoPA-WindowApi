@@ -10,10 +10,14 @@ using namespace std;
 
 #define USERS_FILE "Usuarios.bin"
 #define PRODUCT_FILE "Productos.bin"
+#define ENVIOS_FILE "Envios.bin"
 #define GLOBAL_USER_ID_FILE "GlobalIdUser.txt"
 #define GLOBAL_PRODUCT_ID_FILE "GlobalIdProduct.txt"
+#define GLOBAL_ENVIO_ID_FILE "GlobalIdEnvio.txt"
 #define BAJA 1
 #define CAMBIO 2
+#define ENVIADO "ENVIADO"
+#define PENDIENTE "PENDIENTE DE ENVIO"
 
 struct User {
 	int userId;
@@ -39,8 +43,23 @@ struct Product {
 	Product* next = NULL;
 } *oProduct, *aProduct, *productoActual;
 
+struct Envio {
+	int envioId = 0;
+	struct Producto* producto;
+	int productoId = 0;
+	int cantidad = 0;
+	float total = 0.0;
+	string colonia = "";
+	string ciudad = "";
+	string estado = "";
+	string mensaje = "";
+	string fecha = "";
+	string status = PENDIENTE;
+};
+
 int GLOBAL_USER_ID = 1;
 int GLOBAL_PRODUCT_ID = 1;
+int GLOBAL_ENVIO_ID = 1;
 fstream archive;
 
 //Protipos de los callbacks
@@ -68,6 +87,7 @@ void createProductosAltas();
 void createProductosLista();
 void createProductosBajas();
 void createProductosCambios();
+void buscarProdutoPorId(HWND, Product* , int);
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -122,6 +142,7 @@ void buscarProducto(HWND, Product*, int);
 void eliminarProducto(HWND);
 void updateProducto(Product*, Product*);
 void guardarCambios(HWND);
+HWND hLbProducts;
 
 //Menu
 void handleMenu(UINT, HWND);
@@ -355,7 +376,7 @@ BOOL CALLBACK fProductosLista(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 		case WM_INITDIALOG: {
 			loadProducts();
-			HWND hLbProducts = GetDlgItem(hwnd, LB_PRODUCTOS);
+			hLbProducts = GetDlgItem(hwnd, LB_PRODUCTOS);
 			int index = 0;
 			while (aProduct != NULL) {
 				SendMessage(hLbProducts, LB_ADDSTRING, NULL, (LPARAM)aProduct->name.c_str());
@@ -375,6 +396,11 @@ BOOL CALLBACK fProductosLista(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 						isExitProductosLista = false;
 						break;
 				}
+			}
+			if (HIWORD(wparam) == LBN_SELCHANGE) {
+				int index = SendMessage(hLbProducts, LB_GETCURSEL, NULL, NULL);
+				int productId = SendMessage(hLbProducts, LB_GETITEMDATA, index, NULL);
+				buscarProdutoPorId(hwnd, oProduct, productId);
 			}
 		}break;
 	}
@@ -1036,6 +1062,7 @@ void updateProducto(Product* origin, Product* item) {
 			aux->code = item->code;
 			aux->brand = item->brand;
 			aux->price = item->price;
+			aux->stock = item->stock;
 			break;
 		}
 		aux = aux->next;
@@ -1174,4 +1201,25 @@ void guardarCambios(HWND hwnd) {
 	updateProducto(oProduct, productoActual);
 	loadProducts();
 	MessageBox(NULL, "Producto actualizado con exito", "Mensaje", MB_ICONINFORMATION);
+}
+
+
+void buscarProdutoPorId(HWND hwnd, Product* origin, int productId) {
+	
+	productoActual = NULL;
+	while (origin != NULL) {
+		if (productId == origin->productId) {
+			productoActual = origin;
+			break;
+		}
+		origin = origin->next;
+	}
+	if (productoActual != NULL) {
+		setText(hwnd, P_LISTA_NOMBRE, productoActual->name);
+		setText(hwnd, P_LISTA_CANTIDAD, FloatToString(productoActual->stock));
+		setText(hwnd, P_LISTA_CODIGO, FloatToString(productoActual->code));
+		setText(hwnd, P_LISTA_DESCRIPCION, productoActual->description);
+		setText(hwnd, P_LISTA_MARCA, productoActual->brand);
+		setText(hwnd, P_LISTA_MONTO, FloatToString(productoActual->price));
+	}
 }
