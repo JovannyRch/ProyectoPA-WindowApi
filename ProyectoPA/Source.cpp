@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <sstream>
 #include "resource.h"
 
 using namespace std;
@@ -11,30 +12,32 @@ using namespace std;
 #define PRODUCT_FILE "Productos.bin"
 #define GLOBAL_USER_ID_FILE "GlobalIdUser.txt"
 #define GLOBAL_PRODUCT_ID_FILE "GlobalIdProduct.txt"
+#define BAJA 1
+#define CAMBIO 2
 
 struct User {
 	int userId;
-	string username;
-	string password;
-	string fullname;
-	string alias;
-	string picture;
-	User* prev;
-	User* next;
+	string username = "";
+	string password = "";
+	string fullname = "";
+	string alias = "";
+	string picture = "";
+	User* prev = NULL;
+	User* next = NULL;
 }*oUser, * aUser, * logged;
 
 struct Product {
-	int productId;
-	int stock;
-	string name;
-	int code;
-	string brand;
-	string description;
-	float price;
-	int userId;
-	Product* prev;
-	Product* next;
-} *oProduct, *aProduct;
+	int productId = 0;
+	int stock = 0;
+	string name = "";
+	int code = 0;
+	string brand = "";
+	string description = "";
+	float price = 0.0;
+	int userId = 0;
+	Product* prev = NULL;
+	Product* next = NULL;
+} *oProduct, *aProduct, *productoActual;
 
 int GLOBAL_USER_ID = 1;
 int GLOBAL_PRODUCT_ID = 1;
@@ -48,6 +51,7 @@ BOOL CALLBACK fEnviosMisEnvios(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosAltas(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosLista(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosBajas(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fProductosCambios(HWND, UINT, WPARAM, LPARAM);
 
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
@@ -62,7 +66,8 @@ void createVendedorInfoDialog();
 void createEnviosMisEnvios();
 void createProductosAltas();
 void createProductosLista();
-void createProductosAltas();
+void createProductosBajas();
+void createProductosCambios();
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -92,6 +97,8 @@ void saveGlobalId(string, int);
 bool isEmpty(string);
 bool isNotEmpty(string);
 string StringToUpper(string);
+void setText(HWND, int, string);
+string FloatToString(float);
 
 
 //Usuarios
@@ -111,7 +118,9 @@ void loadProducts();
 void saveProduct(Product *);
 void loadProductId();
 void deleteProduct(Product*, int);
-void buscarProducto(HWND);
+void buscarProducto(HWND, Product*, int);
+void eliminarProducto(HWND);
+void updateProducto(Product*, Product*);
 
 //Menu
 void handleMenu(UINT, HWND);
@@ -150,30 +159,33 @@ void handleLoginClickButton(HWND hwnd) {
 	
 	string password = getText(TXT_PASSWORD, hwnd);
 	string username = getText(TXT_NOMBRE, hwnd);
-	if (password.compare("") == 0 || username.compare("") == 0) {
-		MessageBox(NULL, "Falto llenar la info", "ERROR", MB_ICONERROR);
+	if (isEmpty(password) || isEmpty(username)) {
+		MessageBox(NULL, "Ingrese sus credenciales", "ERROR", MB_ICONERROR);
 		return;
 	}
 
 	if (oUser != NULL) {
 		bool isUserFound = false;
 		while (aUser != NULL) {
-			if (aUser->username.compare(username) == 0 && aUser->password.compare(password) == 0)
+			if (aUser->username.compare(username) == 0 && aUser->password.compare(password) == 0) {
 				isUserFound = true;
+				logged = aUser;
 				break;
+			}
+				
 			aUser = aUser->next;
 		}
 		if (isUserFound) {
-			logged = aUser;
-			if(isEmpty(logged->fullname) || isEmpty(logged->picture) || isEmpty(logged->alias)){
+			//if(isEmpty(logged->fullname) || isEmpty(logged->picture) || isEmpty(logged->alias)){
+			if(isEmpty(logged->fullname) || isEmpty(logged->alias)){
 				MessageBox(NULL, "Complete sus datos para poder continuar", "Información", MB_ICONINFORMATION);
 				createVendedorInfoDialog();
 			}
 			else{
 				createEnviosMisEnvios();
 			}
-			DestroyWindow(hwnd);
 			isExitLogin = false;
+			DestroyWindow(hwnd);
 		}
 		else {
 			MessageBox(NULL, "Credenciales no aceptadas, revise sus datos", "ERROR", MB_ICONERROR);
@@ -181,7 +193,7 @@ void handleLoginClickButton(HWND hwnd) {
 		aUser = oUser;
 	}
 	else {
-		MessageBox(NULL, "Usuario no encontrado", "ERROR", MB_ICONERROR);
+		MessageBox(NULL, "No se encontraron usuarios registrados", "ERROR", MB_ICONERROR);
 	}
 
 }
@@ -236,9 +248,16 @@ void createProductosLista() {
 	ShowWindow(ventana, SW_SHOW);
 }
 
-void createProductosAltas() {
+void createProductosBajas() {
 	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
 	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(PRODUCTOS_BAJAS), NULL, fProductosBajas);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
+void createProductosCambios() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(PRODUCTOS_CAMBIOS), NULL, fProductosCambios);
 	SetMenu(ventana, menu);
 	ShowWindow(ventana, SW_SHOW);
 }
@@ -270,6 +289,32 @@ BOOL CALLBACK fPrototipo(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return false;
 }*/
 
+BOOL CALLBACK fProductosCambios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+	case WM_INITDIALOG: {
+		loadProducts();
+	}break;
+	case WM_COMMAND:
+	{
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+			case P_CAMBIOS_BUSCAR:
+				buscarProducto(hwnd, oProduct, CAMBIO);
+				break;
+			default:
+				handleMenu(LOWORD(wparam), hwnd);
+				isExitProductosLista = false;
+				break;
+			}
+		}
+	}break;
+	}
+	return false;
+}
+
 
 BOOL CALLBACK fProductosBajas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg)
@@ -284,9 +329,11 @@ BOOL CALLBACK fProductosBajas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			switch (LOWORD(wparam))
 			{
 			case BTN_PRODUCTOS_BAJAS_ELIMINAR:
-				buscarProducto(hwnd);
+				buscarProducto(hwnd, oProduct, BAJA);
 				break;
-			
+			case P_BAJAS_ELIMINAR:
+				eliminarProducto(hwnd);
+				break;
 			default:
 				handleMenu(LOWORD(wparam), hwnd);
 				isExitProductosBaja = false;
@@ -460,6 +507,10 @@ BOOL CALLBACK fRegistroDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 BOOL CALLBACK fInfoVendedorDialog(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg)
 	{
+	case WM_INITDIALOG: {
+		setText(hwnd, TXT_NOMBRE_VENDEDOR, logged->fullname);
+		setText(hwnd, TXT_ALIAS_EMPRESA, logged->alias);
+	}break;
 	case WM_COMMAND:
 	{
 		if (HIWORD(wparam) == BN_CLICKED) {
@@ -499,7 +550,9 @@ BOOL CALLBACK fEnviosMisEnvios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 		if (HIWORD(wparam) == BN_CLICKED) {
 			switch (LOWORD(wparam))
 			{
-				
+			default:
+				handleMenu(LOWORD(wparam), hwnd);
+				break;
 			}
 		}
 	}
@@ -583,8 +636,13 @@ void loadUsers() {
 		int totalChar = archive.tellg();
 		if (totalChar < 1) {
 			archive.close();
+		
 			return;
 		}
+		float totalUsuarios = totalChar / sizeof(User);
+		//MessageBox(NULL, FloatToString(totalChar).c_str(), "Total char", MB_ICONERROR);
+		//MessageBox(NULL, FloatToString(sizeof(User)).c_str(), "size user", MB_ICONERROR);
+		//MessageBox(NULL, FloatToString(totalUsuarios).c_str(), "Total users", MB_ICONERROR);
 		for (int i = 0; i < totalChar / sizeof(User); i++) {
 			if (oUser == NULL) {
 				User* temp = new User;
@@ -594,6 +652,7 @@ void loadUsers() {
 				oUser->password.assign(temp->password);
 				oUser->fullname.assign(temp->fullname);
 				oUser->username.assign(temp->username);
+				oUser->alias.assign(temp->alias);
 				oUser->userId = temp->userId;
 				oUser->prev = NULL;
 				oUser->next = NULL;
@@ -613,6 +672,7 @@ void loadUsers() {
 				aUser->password.assign(temp->password);
 				aUser->fullname.assign(temp->fullname);
 				aUser->username.assign(temp->username);
+				aUser->alias.assign(temp->alias);
 				aUser->userId = temp->userId;
 				aUser = oUser;
 				delete reinterpret_cast<char*>(temp);
@@ -769,7 +829,7 @@ void saveUser(User* origin) {
 }
 
 void saveProduct(Product* origin) {
-	archive.open(USERS_FILE, ios::binary | ios::out | ios::trunc);
+	archive.open(PRODUCT_FILE, ios::binary | ios::out | ios::trunc);
 	if (archive.is_open()) {
 		while (origin != NULL) {
 			archive.write(reinterpret_cast<char*>(origin), sizeof(Product));
@@ -790,7 +850,7 @@ void saveGlobalId(string file, int value) {
 void registrarProducto(HWND hwnd) {
 	string nombre = getText(ALTA_PRODUCTO_NOMBRE, hwnd);
 	string inventarioForm = getText(ALTA_PRODUCTO_INVENTARIO, hwnd); //Int
-	string marca = getText(ALTA_PRODUCTO_INVENTARIO, hwnd);
+	string marca = getText(ALTA_PRODUCTO_MARCA, hwnd);
 	string descripcion = getText(ALTA_PRODUCTO_DESCRIPCION, hwnd);
 	string montoForm = getText(ALTA_PRODUCTO_MONTO, hwnd); // Float
 	string codigoForm = getText(ALTA_PRODUCTO_CODIGO, hwnd);
@@ -883,12 +943,12 @@ void loadProductId() {
 	if (archive.is_open()) {
 		archive >> GLOBAL_PRODUCT_ID;
 		archive.close();
-		return;
 	}
 }
 
 
 void handleMenu(UINT wparam, HWND hwnd) {
+	freeMemory();
 	switch (wparam)
 	{
 		
@@ -905,21 +965,23 @@ void handleMenu(UINT wparam, HWND hwnd) {
 			createProductosAltas();
 			break;
 		case ID_PRODUCTOS_BAJAS:
+			createProductosBajas();
 			break;
 		case ID_PRODUCTOS_VERTODOS:
 			createProductosLista();
 			break;
 		case ID_PRODUCTOS_CAMBIOS:
-			
+			createProductosCambios();
 			break;
 		case ID_INFO_VENDEDOR:
 			createVendedorInfoDialog();
 			break;
 		case MENU_EXIT:
 			exit(3);
+			PostQuitMessage(120);
 			break;
 		default:
-			MessageBox(NULL, "Default case", "Exito", MB_ICONWARNING);
+			//MessageBox(NULL, "Default case", "Exito", MB_ICONWARNING);
 			break;
 	}
 	DestroyWindow(hwnd);
@@ -933,48 +995,82 @@ void actualizarInformacionVendedor(HWND hwnd) {
 	if (isEmpty(nombreCompleto) || isEmpty(alias)) {
 		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
 		return;
-	}	
-	StringToUpper(alias);
-	logged->alias.append(StringToUpper(alias));
-	logged->fullname.append(nombreCompleto);
+	}
+
+	logged->fullname = nombreCompleto;
+	logged->alias = StringToUpper(alias);
 	updateUser(oUser, logged);
 	DestroyWindow(hwnd);
 	createEnviosMisEnvios();
 }
 
 void updateUser(User* origin, User* item) {
-	archive.open(USERS_FILE, ios::binary | ios::out | ios::trunc);
-	if (archive.is_open()) {
-		while (origin != NULL) {
-			if (origin->userId == item->userId) {
-				archive.write(reinterpret_cast<char*>(item), sizeof(User));
-			}
-			else {
-				archive.write(reinterpret_cast<char*>(origin), sizeof(User));
-			}
-			origin = origin->next;
+	User* aux;
+	aux = origin;
+
+	while (aux != NULL) {
+		if (aux->userId == item->userId) {
+			aux->fullname = item->fullname;
+			aux->alias = item->alias;
+			break;
 		}
-		archive.close();
+		aux = aux->next;
 	}
+
+
+	while (aux != NULL && aux->prev != NULL) {
+		aux = aux->prev;
+	}
+	saveUser(aux);
+}
+
+
+void updateProducto(Product* origin, Product* item) {
+	Product* aux;
+	aux = origin;
+
+	while (aux != NULL) {
+		if (aux->productId == item->productId) {
+			aux->description = item->description;
+			aux->code = item->code;
+			aux->brand = item->brand;
+			aux->price = item->price;
+			break;
+		}
+		aux = aux->next;
+	}
+
+
+	while (aux != NULL && aux->prev != NULL) {
+		aux = aux->prev;
+	}
+	saveProduct(aux);
 }
 
 void deleteProduct(Product *origin, int id) {
-	archive.open(PRODUCT_FILE, ios::binary | ios::out | ios::trunc);
-	if (archive.is_open()) {
-		while (origin != NULL) {
-			if (origin->userId != id) {
-				archive.write(reinterpret_cast<char*>(origin), sizeof(Product));
-			}
-			else {
-				origin->prev = origin->next;
-				if (origin->next != NULL) {
-					origin->next->prev = origin->prev;
-				}
-			}
-			origin = origin->next;
+	
+	Product* last = NULL;
+	while (origin != NULL) {
+		if (origin->productId == id) {
+			Product* next = origin->next;
+			Product* prev = origin->prev;
+			prev->next = next;
+			next->prev = prev;
+			last = prev;
+			MessageBox(NULL, "Producto eliminado con exito", "Mensaje", MB_ICONINFORMATION);
+			break;
 		}
-		archive.close();
+		origin = origin->next;
 	}
+	int i = 0;
+	while (last != NULL && last->prev != NULL) {
+		last = last->prev;
+	}
+
+	
+
+	saveProduct(last);
+	loadProducts();
 }
 
 
@@ -984,11 +1080,74 @@ string StringToUpper(string strToConvert)
 	return strToConvert;
 }
 
-void buscarProducto(HWND hwnd) {
-	string nombre = getText(PRODUCTOS_BAJAS_NOMBRE, hwnd);
+void buscarProducto(HWND hwnd, Product * origin, int tipo) {
+	string nombre = "";
+
+	if (tipo == BAJA) {
+		nombre = getText(PRODUCTOS_BAJAS_NOMBRE, hwnd);
+	}
+	else {
+		nombre = getText(P_CAMBIOS_NOMBRE, hwnd);
+	}
+
 	if (isEmpty(nombre)) {
 		MessageBox(NULL, "Ingrese nombre del producto", "ERROR", MB_ICONERROR);
 		return;
 	}
 
+	productoActual = NULL;
+
+	while (origin != NULL) {
+		if (StringToUpper(origin->name).compare(StringToUpper(nombre)) == 0) {
+			productoActual = origin;
+			break;
+		}
+		origin = origin->next;
+	}
+	if (productoActual == NULL) {
+		MessageBox(NULL, "Producto no encontrado", "Mensaje", MB_ICONINFORMATION);
+		return;
+	}
+
+	//P_BAJAS_CANTIDAD
+	if (tipo == BAJA) {
+		setText(hwnd, P_BAJAS_CANTIDAD, FloatToString(productoActual->stock));
+		setText(hwnd, P_BAJAS_CODIGO, FloatToString(productoActual->code));
+		setText(hwnd, P_BAJAS_MONTO, FloatToString(productoActual->price));
+		setText(hwnd, P_BAJAS_DESCRIPCION, productoActual->description);
+		setText(hwnd, P_BAJAS_MARCA, productoActual->brand);
+	}
+	else {
+		setText(hwnd, P_CAMBIOS_CANTIDAD, FloatToString(productoActual->stock));
+		setText(hwnd, P_CAMBIOS_CODIGO, FloatToString(productoActual->code));
+		setText(hwnd, P_CAMBIOS_MONTO, FloatToString(productoActual->price));
+		setText(hwnd, P_CAMBIOS_DESCRIPCION, productoActual->description);
+		setText(hwnd, P_CAMBIOS_MARCA, productoActual->brand);
+	}
+
+}
+
+
+
+void eliminarProducto(HWND hwnd) {
+	
+	if (productoActual == NULL) {
+		MessageBox(NULL, "Busque un producto para eliminar", "Mensaje", MB_ICONHAND);
+	}
+	else {
+		int productId = productoActual->productId;
+		deleteProduct(oProduct, productId);
+	}
+}
+
+void setText(HWND hwnd, int id, string value) {
+	HWND dialog = GetDlgItem(hwnd, id);
+	SetWindowText(dialog, value.c_str());
+}
+
+
+string FloatToString(float number) {
+	std::ostringstream buff;
+	buff << number;
+	return buff.str();
 }
