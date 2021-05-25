@@ -121,6 +121,7 @@ void deleteProduct(Product*, int);
 void buscarProducto(HWND, Product*, int);
 void eliminarProducto(HWND);
 void updateProducto(Product*, Product*);
+void guardarCambios(HWND);
 
 //Menu
 void handleMenu(UINT, HWND);
@@ -303,6 +304,9 @@ BOOL CALLBACK fProductosCambios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			{
 			case P_CAMBIOS_BUSCAR:
 				buscarProducto(hwnd, oProduct, CAMBIO);
+				break;
+			case P_CAMBIOS_GUARDAR:
+				guardarCambios(hwnd);
 				break;
 			default:
 				handleMenu(LOWORD(wparam), hwnd);
@@ -640,9 +644,6 @@ void loadUsers() {
 			return;
 		}
 		float totalUsuarios = totalChar / sizeof(User);
-		//MessageBox(NULL, FloatToString(totalChar).c_str(), "Total char", MB_ICONERROR);
-		//MessageBox(NULL, FloatToString(sizeof(User)).c_str(), "size user", MB_ICONERROR);
-		//MessageBox(NULL, FloatToString(totalUsuarios).c_str(), "Total users", MB_ICONERROR);
 		for (int i = 0; i < totalChar / sizeof(User); i++) {
 			if (oUser == NULL) {
 				User* temp = new User;
@@ -1150,4 +1151,27 @@ string FloatToString(float number) {
 	std::ostringstream buff;
 	buff << number;
 	return buff.str();
+}
+
+void guardarCambios(HWND hwnd) {
+	string nombre = getText(P_CAMBIOS_NOMBRE, hwnd);
+	string codigoForm = getText(P_CAMBIOS_CODIGO, hwnd);
+	string montoForm = getText(P_CAMBIOS_MONTO, hwnd);
+	string descripcion = getText(P_CAMBIOS_DESCRIPCION, hwnd);
+	string marca = getText(P_CAMBIOS_MARCA, hwnd);
+
+
+	if ( isEmpty(codigoForm) || isEmpty(montoForm) || isEmpty(descripcion) || isEmpty(marca))  {
+		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		return;
+	}
+	productoActual->name = nombre;
+	productoActual->code = stoi(codigoForm);
+	productoActual->price = stof(montoForm);
+	productoActual->description = descripcion;
+	productoActual->brand = marca;
+
+	updateProducto(oProduct, productoActual);
+	loadProducts();
+	MessageBox(NULL, "Producto actualizado con exito", "Mensaje", MB_ICONINFORMATION);
 }
