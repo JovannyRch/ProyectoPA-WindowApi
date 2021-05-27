@@ -128,7 +128,11 @@ bool isNotEmpty(string);
 string StringToUpper(string);
 void setText(HWND, int, string);
 string FloatToString(float);
-bool isCharInString(char, string);
+int indexOf(char, string);
+bool validacionLetrasyNumeros(string);
+bool validacionLetras(string);
+bool validacionNumeros(string);
+bool validacionMonto(string);
 
 
 //validadoros
@@ -1019,6 +1023,12 @@ void handleRegistrarUsuario(HWND hwnd) {
 		return;
 	}
 
+	//Validacion
+	if (!validacionLetras(username)) {
+		MessageBox(NULL, "El nombre de usuario solo debe contener letras", "ERROR", MB_ICONERROR);
+		return;
+	}
+
 	if (oUser != NULL) { //Ya existe por lo menos 1 usuario
 		bool found = false;
 		while (aUser != NULL) {
@@ -1127,15 +1137,24 @@ void registrarProducto(HWND hwnd) {
 	string descripcion = getText(ALTA_PRODUCTO_DESCRIPCION, hwnd);
 	string montoForm = getText(ALTA_PRODUCTO_MONTO, hwnd); // Float
 	string codigoForm = getText(ALTA_PRODUCTO_CODIGO, hwnd);
+
+	if (!validacionMonto(montoForm)) {
+		MessageBox(NULL, "Monto no válido, debe ser un número con dos décimales", "ERROR", MB_ICONERROR);
+		return;
+	}
 	
 	if (
-		isNotEmpty(nombre) &&
-		isNotEmpty(inventarioForm) && 
-		isNotEmpty(marca) &&
-		isNotEmpty(descripcion) && 
-		isNotEmpty(montoForm) &&
-		isNotEmpty(codigoForm) 
-	) {
+		isEmpty(nombre) ||
+		isEmpty(inventarioForm) ||
+		isEmpty(marca) ||
+		isEmpty(descripcion) ||
+		isEmpty(montoForm) ||
+		isEmpty(codigoForm)
+		) {
+		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		return;
+	}
+	 
 		if (oProduct != NULL) { //Ya existe por lo menos 1 registro
 			bool found = false;
 			while (aProduct != NULL) {
@@ -1151,6 +1170,39 @@ void registrarProducto(HWND hwnd) {
 				return;
 			}
 		}
+		
+
+		//Validaciones
+
+		if (!validacionLetrasyNumeros(nombre)) {
+			MessageBox(NULL, "El nombre del producto solo puede tener letras y números", "ERROR", MB_ICONERROR);
+			return;
+		}
+
+		if (!validacionNumeros(inventarioForm)) {
+			MessageBox(NULL, "La cantidad de inventario debe se un número", "ERROR", MB_ICONERROR);
+			return;
+		}
+
+		if (!validacionNumeros(codigoForm)) {
+			MessageBox(NULL, "El código debe se un número", "ERROR", MB_ICONERROR);
+			return;
+		}
+
+		if (!validacionLetrasyNumeros(marca)) {
+			MessageBox(NULL, "La marca del producto solo puede tener letras y números", "ERROR", MB_ICONERROR);
+			return;
+		}
+
+		if (!validacionLetrasyNumeros(descripcion)) {
+			MessageBox(NULL, "La descripción solo puede tener letras y números", "ERROR", MB_ICONERROR);
+			return;
+		}
+
+		
+
+
+
 
 		if (oProduct == NULL) { //La primera vez que se hace un registro
 			oProduct = new Product;
@@ -1187,10 +1239,7 @@ void registrarProducto(HWND hwnd) {
 		aProduct = oProduct;
 		MessageBox(NULL, "Producto guardado con exito", "ERROR", MB_ICONINFORMATION);
 		//DestroyWindow(hwnd);
-	}
-	else {
-		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
-	}
+	
 }
 
 
@@ -1277,6 +1326,13 @@ void actualizarInformacionVendedor(HWND hwnd) {
 
 	if (isEmpty(nombreCompleto) || isEmpty(alias)) {
 		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		return;
+	}
+
+	//Validacions
+
+	if (!validacionLetras(nombreCompleto)) {
+		MessageBox(NULL, "El nombre solo puede contener letras", "ERROR", MB_ICONERROR);
 		return;
 	}
 
@@ -1601,11 +1657,42 @@ void crearEnvio(HWND hwnd) {
 }
 
 
+bool validacionLetras(string cadena) {
+	string abc = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	for (int i = 0; i < cadena.size(); i++) {
+		if (indexOf(cadena[i], abc) == -1) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool validacionNumeros(string cadena) {
+	return isNumber(cadena);
+}
+
+bool validacionMonto(string cadena) {
+	if (!isNumber(cadena)) {
+		return false;
+	}
+	int index = indexOf('.', cadena);
+	if (index != -1) {
+		if ((cadena.size() - 1 - index) != 2) {
+			return false;
+		}
+		return true;
+	}
+
+	return false;
+}
+
+
 bool validacionLetrasyNumeros(string cadena) {
 
-	string abc = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	string abc = " abcdefghijklmnñopqrstuvwxyzABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789";
 	for (int i = 0; i < cadena.size(); i++) {
-		if (!isCharInString(cadena[i], abc)) {
+		if (indexOf(cadena[i], abc) == -1) {
 			return false;
 		}
 	}
@@ -1614,14 +1701,14 @@ bool validacionLetrasyNumeros(string cadena) {
 }
 
 
-bool isCharInString(char c, string a) {
+int indexOf(char c, string a) {
 	
 	for (int i = 0; i < a.size(); i++) {
 		if (a[i] == c) {
-			return true;
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }
 
 bool isNumber(string str) {
