@@ -902,6 +902,7 @@ void loadProducts() {
 			archive.close();
 			return;
 		}
+		MessageBox(NULL, FloatToString(totalChar / sizeof(Product)).c_str(), "Cantidad de productos", MB_ICONEXCLAMATION);
 		for (int i = 0; i < totalChar / sizeof(Product); i++) {
 			if (oUser == NULL) {
 				Product* temp = new Product;
@@ -941,7 +942,12 @@ void loadProducts() {
 				aProduct->description = temp->description;
 				aProduct->userId = temp->userId;
 				aProduct->price = temp->price;
-			
+				Product* aux = aProduct;
+				while (aux->prev != NULL) {
+					aux = aux->prev;
+				}
+
+				oProduct = aux;
 				aProduct = oProduct;
 				delete reinterpret_cast<char*>(temp);
 			}
@@ -1154,22 +1160,6 @@ void registrarProducto(HWND hwnd) {
 		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
 		return;
 	}
-	 
-		if (oProduct != NULL) { //Ya existe por lo menos 1 registro
-			bool found = false;
-			while (aProduct != NULL) {
-				if (aProduct->name.compare(nombre) == 0 && aProduct->userId == logged->userId) {
-					found = true;
-					break;
-				}
-				aProduct = aProduct->next;
-			}
-			aProduct = oProduct;
-			if (found) {
-				MessageBox(NULL, "Producto repetido, por favor ingrese otro nombre", "ERROR", MB_ICONERROR);
-				return;
-			}
-		}
 		
 
 		//Validaciones
@@ -1199,7 +1189,24 @@ void registrarProducto(HWND hwnd) {
 			return;
 		}
 
+
+		if (oProduct != NULL) { //Ya existe por lo menos 1 registro
+
+			bool found = false;
+			while (aProduct != NULL) {
+				if (aProduct->name.compare(nombre) == 0 && aProduct->userId == logged->userId) {
+					found = true;
+					break;
+				}
+				aProduct = aProduct->next;
+			}
+			if (found) {
+				MessageBox(NULL, "Producto repetido, por favor ingrese otro nombre", "ERROR", MB_ICONERROR);
+				return;
+			}
+			aProduct = oProduct;
 		
+		}
 
 
 
@@ -1216,6 +1223,7 @@ void registrarProducto(HWND hwnd) {
 			oProduct->productId = GLOBAL_PRODUCT_ID++;
 			oProduct->prev = NULL;
 			oProduct->next = NULL;
+			MessageBox(NULL, "Primer registro", "ERROR", MB_ICONINFORMATION);
 		}
 		else { //Tenemos mas de un registro
 			while (aProduct->next != NULL) {
@@ -1233,7 +1241,11 @@ void registrarProducto(HWND hwnd) {
 			aProduct->description = (descripcion);
 			aProduct->price = stof(montoForm);
 			aProduct->userId = logged->userId;
+			oProduct = aProduct;
+			
 		}
+
+
 		saveProduct(oProduct);
 		saveGlobalId(GLOBAL_PRODUCT_ID_FILE, GLOBAL_PRODUCT_ID);
 		aProduct = oProduct;
@@ -1309,8 +1321,11 @@ void handleMenu(UINT wparam, HWND hwnd) {
 			createVendedorInfoDialog();
 			break;
 		case MENU_EXIT:
-			exit(3);
-			PostQuitMessage(120);
+			{
+				exit(3);
+				isExitLogin = true;
+				PostQuitMessage(120);
+			}
 			break;
 		default:
 			//MessageBox(NULL, "Default case", "Exito", MB_ICONWARNING);
@@ -1412,27 +1427,46 @@ void updateEnvio(Envio* origin, Envio* item) {
 
 void deleteProduct(Product *origin, int id) {
 	
-	Product* last = NULL;
+	Product* aux = NULL;
 	while (origin != NULL) {
 		if (origin->productId == id) {
-			Product* next = origin->next;
-			Product* prev = origin->prev;
-			prev->next = next;
-			next->prev = prev;
-			last = prev;
-			MessageBox(NULL, "Producto eliminado con exito", "Mensaje", MB_ICONINFORMATION);
+
+			//Unico
+			if (origin->prev == NULL && origin->next == NULL) {
+				aux = NULL;
+			}
+
+			//Primero
+			else if (origin->prev == NULL && origin->next != NULL) {
+				aux = origin->next;
+				aux->prev = NULL;
+			}
+
+			
+			//Ultimo
+			else if (origin->next == NULL) {
+				aux = origin;
+				aux->prev->next = NULL;
+			}
+		
+			//En medio
+			else if (origin->prev != NULL && origin->next != NULL) {
+				aux = origin;
+				aux->prev->next = origin->next;
+				aux->next->prev= origin->prev;
+			}
+			MessageBox(NULL, "Envio actualizado", "Mensaje", MB_ICONINFORMATION);
 			break;
 		}
 		origin = origin->next;
 	}
-	int i = 0;
-	while (last != NULL && last->prev != NULL) {
-		last = last->prev;
+
+	while (aux != NULL && aux->prev != NULL) {
+		aux = aux->prev;
 	}
 
-	
 
-	saveProduct(last);
+	saveProduct(aux);
 	loadProducts();
 }
 
