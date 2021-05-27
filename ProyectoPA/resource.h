@@ -33,20 +33,27 @@
 #define IDC_BUTTON1                     1024
 #define IDC_BUTTON2                     1026
 #define IDC_EDIT2                       1027
+#define ENVIOS_CAMBIOS_CALLE            1027
 #define IDC_BUTTON4                     1028
 #define IDC_EDIT3                       1029
+#define ENVIOS_CAMBIOS_COLONIA          1029
 #define IDC_EDIT4                       1030
+#define ENVIOS_CAMBIOS_CIUDAD           1030
 #define IDC_EDIT5                       1031
+#define ENVIOS_CAMBIOS_ESTADO           1031
 #define IDC_EDIT6                       1032
 #define ENVIO_ALTAS_CIUDAD              1032
+#define ENVIOS_CAMBIOS_MONTO            1032
 #define IDC_DATETIMEPICKER1             1033
 #define IDC_EDIT7                       1034
 #define IDC_EDIT1                       1034
 #define P_CAMBIOS_NOMBRE                1034
 #define P_LISTA_NOMBRE                  1034
 #define ENVIO_ALTAS_ESTADO              1034
+#define ENVIOS_CAMBIOS_CANTIDAD         1034
 #define IDC_EDIT8                       1035
 #define ENVIO_ALTAS_MENSAJE             1035
+#define ENVIOS_CAMBIOS_MENSAJE          1035
 #define ALTA_PRODUCTO_CODIGO            1036
 #define ALTA_PRODUCTO_MARCA             1037
 #define ALTA_PRODUCTO_DESCRIPCION       1038
@@ -88,6 +95,9 @@
 #define ENVIO_ALTAS_CREAR               1073
 #define BTN_CALCULAR_MONTO              1074
 #define LB_MIS_ENVIOS                   1075
+#define ENVIOS_CAMBIOS_GUARDAR          1076
+#define IDC_EDIT9                       1077
+#define ENVIOS_CAMBIOS_FECHA            1077
 #define ID_PRODUCTOS_ALTAS              40001
 #define ID_PRODUCTOS_BAJAS              40002
 #define ID_PRODUCTOS_CAMBIOS            40003
@@ -110,7 +120,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40016
-#define _APS_NEXT_CONTROL_VALUE         1076
+#define _APS_NEXT_CONTROL_VALUE         1078
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

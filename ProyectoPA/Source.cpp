@@ -45,10 +45,11 @@ struct Product {
 
 struct Envio {
 	int envioId = 0;
-	struct Product* producto;
 	int productoId = 0;
+	string producto = "";
 	int cantidad = 0;
 	float total = 0.0;
+	string calle = "";
 	string colonia = "";
 	string ciudad = "";
 	string estado = "";
@@ -58,7 +59,7 @@ struct Envio {
 	Envio* prev = NULL;
 	Envio* next = NULL;
 	int userId = 0;
-} *oEnvio, *aEnvio;
+} *oEnvio, *aEnvio, *envioSeleccionado;
 
 int GLOBAL_USER_ID = 1;
 int GLOBAL_PRODUCT_ID = 1;
@@ -76,6 +77,7 @@ BOOL CALLBACK fProductosBajas(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK fProductosCambios(HWND, UINT, WPARAM, LPARAM);
 
 BOOL CALLBACK fEnviosAltas(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK fEnviosCambios(HWND, UINT, WPARAM, LPARAM);
 
 void handleLoginClickButton(HWND);
 void cerrarVentana(HWND);
@@ -94,6 +96,7 @@ void createProductosBajas();
 void createProductosCambios();
 
 void createEnviosAltas();
+void createEnviosCambios();
 
 // Alertas
 void mostrarMensaje(HWND, LPCSTR);
@@ -125,6 +128,7 @@ bool isNotEmpty(string);
 string StringToUpper(string);
 void setText(HWND, int, string);
 string FloatToString(float);
+bool isCharInString(char, string);
 
 
 //validadoros
@@ -164,6 +168,9 @@ void crearEnvio(HWND);
 void saveEnvio(Envio*);
 void loadEnvios();
 void loadEnvioId();
+void buscarEnvioPorId(HWND, Envio*, int);
+void actualizarEnvio(HWND);
+void updateEnvio(Envio*, Envio*);
 HWND hLbEnvios;
 
 //Menu
@@ -316,6 +323,13 @@ void createEnviosAltas() {
 	ShowWindow(ventana, SW_SHOW);
 }
 
+void createEnviosCambios() {
+	HMENU menu = LoadMenu(hGlobalInstance, MAKEINTRESOURCE(IDR_MENU1));
+	HWND ventana = CreateDialog(hGlobalInstance, MAKEINTRESOURCE(ENVIOS_EDITAR), NULL, fEnviosCambios);
+	SetMenu(ventana, menu);
+	ShowWindow(ventana, SW_SHOW);
+}
+
 //Callbacks de los dialogos
 
 
@@ -342,6 +356,61 @@ BOOL CALLBACK fPrototipo(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	}
 	return false;
 }*/
+
+
+BOOL CALLBACK fEnviosCambios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	switch (msg)
+	{
+
+	case WM_INITDIALOG: {
+		loadEnvios();
+		hLbEnvios = GetDlgItem(hwnd, IDC_LIST1);
+		int index = 0;
+		while (aEnvio != NULL) {
+			string label = aEnvio->calle+", "+aEnvio->colonia + ", " + aEnvio->ciudad + ", " + aEnvio->estado + " | " + aEnvio->producto + " | " + aEnvio->status;
+			SendMessage(hLbEnvios, LB_ADDSTRING, NULL, (LPARAM)label.c_str());
+			SendMessage(hLbEnvios, LB_SETITEMDATA, (WPARAM)index, (LPARAM)aEnvio->envioId);
+			aEnvio = aEnvio->next;
+			index++;
+		}
+		aEnvio = oEnvio;
+	}break;
+	case WM_COMMAND:
+	{
+		if (HIWORD(wparam) == BN_CLICKED) {
+			switch (LOWORD(wparam))
+			{
+			case ENVIOS_CAMBIOS_GUARDAR: {
+				actualizarEnvio(hwnd);
+				DestroyWindow(hwnd);
+				createEnviosMisEnvios();
+			}
+				break;
+			default:
+				handleMenu(LOWORD(wparam), hwnd);
+				isExitProductosLista = false;
+				break;
+			}
+		}
+		if (HIWORD(wparam) == LBN_SELCHANGE) {
+			int index = SendMessage(hLbEnvios, LB_GETCURSEL, NULL, NULL);
+			int envioId = SendMessage(hLbEnvios, LB_GETITEMDATA, index, NULL);
+			buscarEnvioPorId(hwnd, oEnvio, envioId);
+			if (envioSeleccionado != NULL) {
+				setText(hwnd, ENVIOS_CAMBIOS_CANTIDAD, FloatToString(envioSeleccionado->cantidad));
+				setText(hwnd, ENVIOS_CAMBIOS_MONTO, FloatToString(envioSeleccionado->total));
+				setText(hwnd, ENVIOS_CAMBIOS_CALLE, envioSeleccionado->calle);
+				setText(hwnd, ENVIOS_CAMBIOS_COLONIA, envioSeleccionado->colonia);
+				setText(hwnd, ENVIOS_CAMBIOS_CIUDAD, envioSeleccionado->ciudad);
+				setText(hwnd, ENVIOS_CAMBIOS_ESTADO, envioSeleccionado->estado);
+				setText(hwnd, ENVIOS_CAMBIOS_MENSAJE, envioSeleccionado->mensaje);
+				setText(hwnd, ENVIOS_CAMBIOS_FECHA, envioSeleccionado->fecha);
+			}
+		}
+	}break;
+	}
+	return false;
+}
 
 
 BOOL CALLBACK fEnviosAltas(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -660,16 +729,15 @@ BOOL CALLBACK fEnviosMisEnvios(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	switch (msg)
 	{
 	case WM_INITDIALOG: {
-		if (logged != NULL) {
+		/*if (logged != NULL) {
 			HWND hLblUserName = GetDlgItem(hwnd, LBL_NOMBRE_USUARIO);
 			SetWindowText(hLblUserName, logged->alias.c_str());
-		}
+		}*/
 		loadEnvios();
-		hLbEnvios = GetDlgItem(hwnd, LB_ENVIOS_ALTA);
+		hLbEnvios = GetDlgItem(hwnd, LB_MIS_ENVIOS);
 		int index = 0;
 		while (aEnvio != NULL) {
-			Product* p = aEnvio->producto;
-			string label = aEnvio->colonia + ", " + aEnvio->ciudad + ", "+ aEnvio->estado + " | "+p->name+" | "+aEnvio->status;
+			string label = aEnvio->calle+", "+aEnvio->colonia + ", " + aEnvio->ciudad + ", "+ aEnvio->estado + " | "+ aEnvio->producto+" | "+aEnvio->status;
 			SendMessage(hLbEnvios, LB_ADDSTRING, NULL, (LPARAM)label.c_str());
 			SendMessage(hLbEnvios, LB_SETITEMDATA, (WPARAM)index, (LPARAM)aEnvio->envioId);
 			aEnvio = aEnvio->next;
@@ -762,6 +830,7 @@ void freeMemory() {
 
 
 void loadUsers() {
+	oUser = aUser = NULL;
 	archive.open(USERS_FILE, ios::binary | ios::in | ios::ate);
 	
 	if (archive.is_open()) {
@@ -769,7 +838,6 @@ void loadUsers() {
 		int totalChar = archive.tellg();
 		if (totalChar < 1) {
 			archive.close();
-		
 			return;
 		}
 		float totalUsuarios = totalChar / sizeof(User);
@@ -820,6 +888,7 @@ void loadUsers() {
 
 
 void loadProducts() {
+	aProduct = oProduct = NULL;
 	archive.open(PRODUCT_FILE, ios::binary | ios::in | ios::ate);
 
 	if (archive.is_open()) {
@@ -837,10 +906,10 @@ void loadProducts() {
 				archive.read(reinterpret_cast<char*>(temp), sizeof(Product));
 				oProduct->productId = temp->productId;
 				oProduct->stock = temp->stock;
-				oProduct->name.append(temp->name);
+				oProduct->name = temp->name;
 				oProduct->code  = temp->code;
-				oProduct->brand.append(temp->brand);
-				oProduct->description.append(temp->description);
+				oProduct->brand = temp->brand;
+				oProduct->description = temp->description;
 				oProduct->userId = temp->userId;
 				oProduct->price = temp->price;
 				oProduct->prev = NULL;
@@ -862,10 +931,10 @@ void loadProducts() {
 				
 				aProduct->productId = temp->productId;
 				aProduct->stock = temp->stock;
-				aProduct->name.append(temp->name);
+				aProduct->name = temp->name;
 				aProduct->code = temp->code;
-				aProduct->brand.append(temp->brand);
-				aProduct->description.append(temp->description);
+				aProduct->brand = temp->brand;
+				aProduct->description = temp->description;
 				aProduct->userId = temp->userId;
 				aProduct->price = temp->price;
 			
@@ -880,6 +949,7 @@ void loadProducts() {
 
 
 void loadEnvios() {
+	oEnvio = aEnvio = NULL;
 	archive.open(ENVIOS_FILE, ios::binary | ios::in | ios::ate);
 
 	if (archive.is_open()) {
@@ -889,6 +959,8 @@ void loadEnvios() {
 			archive.close();
 			return;
 		}
+		string total = FloatToString(totalChar / sizeof(Envio));
+
 		for (int i = 0; i < totalChar / sizeof(Envio); i++) {
 			if (oEnvio == NULL) {
 				Envio* temp = new Envio;
@@ -900,6 +972,8 @@ void loadEnvios() {
 				oEnvio->colonia = temp->colonia;
 				oEnvio->envioId = temp->envioId;
 				oEnvio->estado = temp->estado;
+				oEnvio->calle = temp->calle;
+				oEnvio->total = temp->total;
 				oEnvio->fecha = temp->fecha;
 				oEnvio->mensaje = temp->mensaje;
 				oEnvio->prev = NULL;
@@ -918,7 +992,8 @@ void loadEnvios() {
 				aEnvio->next->prev = aEnvio;
 				aEnvio = aEnvio->next;
 				aEnvio->next = NULL;
-
+				aEnvio->calle = temp->calle;
+				aEnvio->total = temp->total;
 				aEnvio->cantidad = temp->cantidad;
 				aEnvio->ciudad = temp->ciudad;
 				aEnvio->colonia = temp->colonia;
@@ -962,11 +1037,11 @@ void handleRegistrarUsuario(HWND hwnd) {
 
 	if (oUser == NULL) { //La primera vez que registramos un Usuario
 		oUser = new User;
-		oUser->password.append(password);
-		oUser->fullname.append("");
-		oUser->alias.append("");
-		oUser->picture.append("");
-		oUser->username.append(username);
+		oUser->password = (password);
+		oUser->fullname = ("");
+		oUser->alias = ("");
+		oUser->picture = ("");
+		oUser->username = (username);
 		oUser->userId = GLOBAL_USER_ID++;
 		oUser->prev = NULL;
 		oUser->next = NULL;
@@ -980,11 +1055,11 @@ void handleRegistrarUsuario(HWND hwnd) {
 		aUser = aUser->next;
 		aUser->next = NULL;
 		aUser->userId = GLOBAL_USER_ID++;
-		aUser->password.append(password);
-		aUser->fullname.append("");
-		aUser->alias.append("");
-		aUser->picture.append("");
-		aUser->username.append(username);
+		aUser->password = (password);
+		aUser->fullname = ("");
+		aUser->alias = ("");
+		aUser->picture = ("");
+		aUser->username = (username);
 	}
 	saveUser(oUser);
 	saveUserId();
@@ -1079,11 +1154,11 @@ void registrarProducto(HWND hwnd) {
 
 		if (oProduct == NULL) { //La primera vez que se hace un registro
 			oProduct = new Product;
-			oProduct->name.append(nombre);
-			oProduct->brand.append(marca);
+			oProduct->name = (nombre);
+			oProduct->brand = (marca);
 			oProduct->stock = stoi(inventarioForm);
 			oProduct->code = stoi(codigoForm);
-			oProduct->description.append(descripcion);
+			oProduct->description = (descripcion);
 			oProduct->price = stof(montoForm);
 			oProduct->userId = logged->userId;
 			oProduct->productId = GLOBAL_PRODUCT_ID++;
@@ -1099,11 +1174,11 @@ void registrarProducto(HWND hwnd) {
 			aProduct = aProduct->next;
 			aProduct->next = NULL;
 			aProduct->productId = GLOBAL_PRODUCT_ID++;
-			aProduct->name.append(nombre);
-			aProduct->brand.append(marca);
+			aProduct->name = (nombre);
+			aProduct->brand = (marca);
 			aProduct->stock = stoi(inventarioForm);
 			aProduct->code = stoi(codigoForm);
-			aProduct->description.append(descripcion);
+			aProduct->description = (descripcion);
 			aProduct->price = stof(montoForm);
 			aProduct->userId = logged->userId;
 		}
@@ -1167,6 +1242,7 @@ void handleMenu(UINT wparam, HWND hwnd) {
 		case ID_ENVIOS_BAJAS:
 			break;
 		case ID_ENVIOS_CAMBIOS:
+			createEnviosCambios();
 			break;
 		case ID_PRODUCTOS_ALTAS:
 			createProductosAltas();
@@ -1253,6 +1329,29 @@ void updateProducto(Product* origin, Product* item) {
 		aux = aux->prev;
 	}
 	saveProduct(aux);
+}
+
+void updateEnvio(Envio* origin, Envio* item) {
+	Envio* aux;
+	aux = origin;
+
+	while (aux != NULL) {
+		if (aux->envioId == item->envioId) {
+			aux->colonia = item->colonia;
+			aux->ciudad = item->ciudad;
+			aux->estado = item->estado;
+			aux->calle = item->calle;
+			MessageBox(NULL, "Envio actualizado", "Mensaje", MB_ICONINFORMATION);
+			break;
+		}
+		aux = aux->next;
+	}
+
+
+	while (aux != NULL && aux->prev != NULL) {
+		aux = aux->prev;
+	}
+	saveEnvio(aux);
 }
 
 void deleteProduct(Product *origin, int id) {
@@ -1369,7 +1468,7 @@ void guardarCambios(HWND hwnd) {
 
 
 	if ( isEmpty(codigoForm) || isEmpty(montoForm) || isEmpty(descripcion) || isEmpty(marca))  {
-		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONEXCLAMATION);
 		return;
 	}
 	productoActual->name = nombre;
@@ -1381,6 +1480,23 @@ void guardarCambios(HWND hwnd) {
 	updateProducto(oProduct, productoActual);
 	loadProducts();
 	MessageBox(NULL, "Producto actualizado con exito", "Mensaje", MB_ICONINFORMATION);
+}
+
+void actualizarEnvio(HWND hwnd) {
+	string calle = getText(ENVIOS_CAMBIOS_CALLE, hwnd);
+	string colonia = getText(ENVIOS_CAMBIOS_COLONIA, hwnd);
+	string ciudad = getText(ENVIOS_CAMBIOS_CIUDAD, hwnd);
+	string estado = getText(ENVIOS_CAMBIOS_ESTADO, hwnd);
+	if (isEmpty(calle) || isEmpty(colonia) || isEmpty(ciudad) || isEmpty(estado)) {
+		MessageBox(NULL, "Datos incompletos", "Mensaje", MB_ICONEXCLAMATION);
+		return;
+	}
+	envioSeleccionado->calle = calle;
+	envioSeleccionado->colonia = colonia;
+	envioSeleccionado->ciudad = ciudad;
+	envioSeleccionado->estado = estado;
+	updateEnvio(oEnvio, envioSeleccionado);
+	
 }
 
 
@@ -1396,6 +1512,17 @@ void buscarProdutoPorId(HWND hwnd, Product* origin, int productId) {
 	}
 }
 
+void buscarEnvioPorId(HWND hwnd, Envio* origin, int envioId) {
+	envioSeleccionado = NULL;
+	while (origin != NULL) {
+		if (envioId == origin->envioId) {
+			envioSeleccionado = origin;
+			break;
+		}
+		origin = origin->next;
+	}
+}
+
 
 void crearEnvio(HWND hwnd) {
 
@@ -1404,16 +1531,29 @@ void crearEnvio(HWND hwnd) {
 		return;
 	}
 
+
+
+
+
 	string cantidadForm = getText(ENVIO_ALTAS_CANTIDAD, hwnd);
 	string calle = getText(ENVIO_ALTAS_CALLE, hwnd);
 	string colonia = getText(ENVIO_ALTAS_COLONIA, hwnd);
 	string estado = getText(ENVIO_ALTAS_ESTADO, hwnd);
 	string ciudad = getText(ENVIO_ALTAS_CIUDAD, hwnd);
 	string mensaje = getText(ENVIO_ALTAS_MENSAJE, hwnd);
+	string monto = getText(ENVIO_ALTAS_MONTO, hwnd);
+
+
+
 
 	//TODO: add date
 	if (isEmpty(cantidadForm) || isEmpty(calle) || isEmpty(colonia) || isEmpty(estado) || isEmpty(ciudad) || isEmpty(mensaje)) {
 		MessageBox(NULL, "Datos incompletos", "ERROR", MB_ICONERROR);
+		return;
+	}
+
+	if (isEmpty(monto)) {
+		MessageBox(NULL, "Calcule el monto", "ERROR", MB_ICONERROR);
 		return;
 	}
 
@@ -1423,8 +1563,11 @@ void crearEnvio(HWND hwnd) {
 		oEnvio = new Envio;
 		oEnvio->cantidad = stoi(cantidadForm);
 		oEnvio->ciudad = ciudad;
+		oEnvio->calle = calle;
 		oEnvio->colonia = colonia;
 		oEnvio->estado = estado;
+		oEnvio->total = stof(monto);
+		oEnvio->mensaje = mensaje;
 		oEnvio->status = STATUS_PENDIENTE;
 		oEnvio->envioId = GLOBAL_ENVIO_ID++;
 		oEnvio->userId = logged->userId;
@@ -1442,7 +1585,10 @@ void crearEnvio(HWND hwnd) {
 		aEnvio->cantidad = stoi(cantidadForm);
 		aEnvio->ciudad = ciudad;
 		aEnvio->colonia = colonia;
+		aEnvio->mensaje = mensaje;
+		aEnvio->calle = calle;
 		aEnvio->estado = estado;
+		aEnvio->total = stof(monto);
 		aEnvio->status = STATUS_PENDIENTE;
 		aEnvio->envioId = GLOBAL_ENVIO_ID++;
 		aEnvio->userId = logged->userId;
@@ -1454,6 +1600,29 @@ void crearEnvio(HWND hwnd) {
 	MessageBox(NULL, "Envio creado con exito", "Mensaje", MB_ICONINFORMATION);
 }
 
+
+bool validacionLetrasyNumeros(string cadena) {
+
+	string abc = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	for (int i = 0; i < cadena.size(); i++) {
+		if (!isCharInString(cadena[i], abc)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
+bool isCharInString(char c, string a) {
+	
+	for (int i = 0; i < a.size(); i++) {
+		if (a[i] == c) {
+			return true;
+		}
+	}
+	return false;
+}
 
 bool isNumber(string str) {
 	int i = 0, j = str.length() - 1;
